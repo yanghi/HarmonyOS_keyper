@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "manager your accounts"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "Keyper"
+    },
+    {
+      "name": "read_doc_reason",
+      "value": "get user document"
+    }
+  ]
+}

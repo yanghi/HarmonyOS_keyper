@@ -1,0 +1,10 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/Lock",
+    "pages/Account",
+    "pages/Binding",
+    "pages/About",
+    "pages/RecycleBin"
+  ]
+}

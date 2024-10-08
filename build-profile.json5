@@ -1,0 +1,41 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\lyh\\.ohos\\config\\auto_debug_MyApplication_com.keyper.keyper_70086000162732789.cer",
+          "storePassword": "0000001B870E4530442AF65564CCDE8D3B3B23219EDC7270DFC37A6A9C9124E747B0FA43230D22BD2F62E7",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B9B979BD8495D3F7344EB313C000958C65B24536AE4936E20F3B0E30B5C4C60E59AAA0162D199C0",
+          "profile": "C:\\Users\\lyh\\.ohos\\config\\auto_debug_MyApplication_com.keyper.keyper_70086000162732789.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\lyh\\.ohos\\config\\auto_debug_MyApplication_com.keyper.keyper_70086000162732789.p12"
+        }
+      }
+    ],
+    "compileSdkVersion": 9,
+    "compatibleSdkVersion": 9,
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

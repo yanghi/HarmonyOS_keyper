@@ -1,0 +1,80 @@
+import { CommonConstants } from '../common/constants/CommonConstants';
+import { AccountBindingType } from '../common/enums/account';
+import { AccountBinding, AccountBindingWithContactId } from '../common/interfaces/AccountBinding';
+import { AccountBindingListModel, AccountBindingModel } from '../model/AccountBinding';
+import Logger from '../common/utils/Logger'
+
+const TAG = '[AccountBindingViewModel]'
+
+export class AccountBindingViewModel {
+  typeLabel: string
+  private initCopy: AccountBindingWithContactId | AccountBinding
+
+  constructor(data: AccountBindingWithContactId | AccountBinding) {
+    Object.assign(this, { contactId: -1 }, data)
+    this.initCopy = Object.assign({}, data)
+    this.typeLabel = CommonConstants.AccountBindingTypeMapLabel.get(data.type)
+    this.updateCurrentTypeContactOptions()
+  }
+
+  isContacted() {
+    return this.contactId !== -1
+  }
+
+  isChange() {
+    return this.initCopy.type !== this.type || this.initCopy.bind !== this.bind
+  }
+
+  setType(type: AccountBindingType) {
+    this.typeLabel = CommonConstants.AccountBindingTypeMapLabel.get(type)
+    this.type = type
+    this.id = -1
+    this.contactId = -1
+    this.updateCurrentTypeContactOptions()
+
+  }
+
+  setTypeLabel(label: string) {
+    this.type = CommonConstants.LabelMapAccountBindingType.get(label)
+    this.typeLabel = label
+    this.id = -1
+    this.contactId = -1
+    this.updateCurrentTypeContactOptions()
+
+  }
+
+  value(): AccountBindingWithContactId {
+    return {
+      contactId: this.contactId,
+      updateTime: this.updateTime,
+      createTime: this.createTime,
+      id: this.id,
+      bind: this.bind,
+      type: this.type
+    }
+  }
+
+  private currentTypeContactOptions: (SelectOption & { bindingId: number })[] = []
+
+  getCurrentTypeContactOptions() {
+    return this.currentTypeContactOptions
+  }
+
+  updateCurrentTypeContactOptions() {
+    let group = AccountBindingListModel.getTypeGroup().get(this.type) || []
+    this.currentTypeContactOptions = group.map(ab => ({
+      value: ab.bind,
+      bindingId: ab.id
+    }))
+  }
+
+  contactCurrentTypeBindingWithIdx(bindingIdx: number) {
+    let binding = this.currentTypeContactOptions[bindingIdx]
+    if (binding) {
+      this.id = binding.bindingId
+      this.bind = binding.value as string
+    }
+  }
+}
+
+export interface AccountBindingViewModel extends AccountBindingWithContactId {}
