@@ -12,7 +12,7 @@ import { EventId } from '../common/enums/Event'
 import relationalStore from '@ohos.data.relationalStore'
 import { AccountBindingWithContactId } from '../common/interfaces/AccountBinding'
 import { cipherModel } from './Cipher'
-import { mockAccountList } from '../common/utils/MockData'
+import { mockAccountList, useMockData } from '../common/utils/MockData'
 
 const LOG_TAG = '[AccountModel]'
 
@@ -39,8 +39,11 @@ export class AccountListModelCls {
 
   constructor() {
     //   mocks
-    this.list = mockAccountList()
-    this.deletedList = mockAccountList()
+    if(useMockData()){
+      this.list = mockAccountList()
+      this.deletedList = mockAccountList()
+    }
+
   }
 
   private async decryptAccount(acc: AccountInterface): Promise<AccountInterface> {

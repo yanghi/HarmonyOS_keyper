@@ -3,14 +3,20 @@ import { AccountBindingType } from '../common/enums/account';
 import { AccountBinding, AccountBindingWithContactId } from '../common/interfaces/AccountBinding';
 import { AccountBindingListModel, AccountBindingModel } from '../model/AccountBinding';
 import Logger from '../common/utils/Logger'
+import { MaskObject } from '../model/Mask';
 
 const TAG = '[AccountBindingViewModel]'
+type AccountMaskKeys = keyof Pick<AccountBindingData, 'bind'>
 
-export class AccountBindingViewModel {
+type AccountBindingData = AccountBindingWithContactId | AccountBinding
+const ACCOUNT_BINDING_MASK_KEYS: AccountMaskKeys[] = ['bind']
+
+export class AccountBindingViewModel extends MaskObject<AccountBindingData, Array<AccountMaskKeys>> {
   typeLabel: string
   private initCopy: AccountBindingWithContactId | AccountBinding
 
   constructor(data: AccountBindingWithContactId | AccountBinding) {
+    super(data, ACCOUNT_BINDING_MASK_KEYS)
     Object.assign(this, { contactId: -1 }, data)
     this.initCopy = Object.assign({}, data)
     this.typeLabel = CommonConstants.AccountBindingTypeMapLabel.get(data.type)

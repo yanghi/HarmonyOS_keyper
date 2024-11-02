@@ -9,7 +9,7 @@ import emitter from '@ohos.events.emitter'
 import { EventId } from '../common/enums/Event'
 import { AccountBindingContactListModel } from './AccountBindingContact'
 import { cipherModel } from './Cipher'
-import { mockBindingList } from '../common/utils/MockData'
+import { mockBindingList, useMockData } from '../common/utils/MockData'
 
 const LOG_TAG = '[AccountBindingModel]'
 
@@ -35,7 +35,9 @@ export class AccountBindingListModelCls {
   private typeGroup: Map<AccountBindingType, AccountBinding[]> = new Map()
 
   constructor() {
-    this.list = mockBindingList()
+    if(useMockData()){
+      this.list = mockBindingList()
+    }
   }
 
   getTypeGroup() {

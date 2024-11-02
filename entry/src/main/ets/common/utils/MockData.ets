@@ -36,7 +36,7 @@ export function mockAccountList(): AccountInterface[] {
       name: '163',
       bindings: [{
         type: AccountBindingType.Phone,
-        bind: '177',
+        bind: '17722223333',
         createTime: '',
         updateTime: '',
         id: 0,
@@ -112,4 +112,8 @@ export function mockAccountList(): AccountInterface[] {
       id: 5,
     },
   ]
+}
+
+export function useMockData(): boolean {
+  return true
 }

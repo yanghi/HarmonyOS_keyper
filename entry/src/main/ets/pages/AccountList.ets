@@ -10,15 +10,22 @@ import promptAction from '@ohos.promptAction'
 import { ConverterModel } from '../model/ConverterModel'
 import { TopNavBar } from '../components/TopNavBar'
 import { CommonConstants } from '../common/constants/CommonConstants'
+import { AccountViewModel } from '../viewModel/AccountViewModel'
+import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
 
 const TAG = '[Account list page]'
 
 @Component
 export struct AccountList {
-  @State accounts: AccountListModelCls = AccountListModel
-  @State list: AccountInterface [] = []
+  // @State list: AccountInterface [] = []
+  @State list: AccountViewModel[] = AccountListModel.list.map(a => new AccountViewModel(a))
   updateListEventHandle = () => {
-    this.list = AccountListModel.list
+    Logger.debug(TAG, 'list' + AccountListModel.list?.length)
+    this.list = AccountListModel.list.map(a => new AccountViewModel(a))
+  }
+
+  forceUpdateList() {
+    this.list = this.list.slice()
   }
 
   aboutToAppear() {
@@ -106,48 +113,74 @@ export struct AccountList {
           }.height('100%')
         }
         List({ space: 10 }) {
-          ForEach(this.list, (item: AccountInterface, idx) => {
+          ForEach(this.list, (item: AccountViewModel, idx) => {
             ListItem() {
               Column() {
                 Column() {
                   Row() {
-                    Text(item.name)
-                      .width('100%')
+                    Text(item.data.name)
                       .align(Alignment.Center)
                       .fontColor('#1890ff')
                       .margin({ bottom: 6 })
+                    Button() {
+                      Row() {
+                        Image(item.isAllMasked()
+                          ? $r('app.media.eye_open_primary_icon') : $r('app.media.eye_close_primary_icon')).width(18)
+                      }
+
+                    }.backgroundColor(Color.Transparent)
+                    .margin({ left: 5 })
+                    .onClick(() => {
+                      item.toggleAllMask()
+                      this.forceUpdateList()
+                    })
+
                   }.width('100%')
+                  .justifyContent(FlexAlign.SpaceBetween)
                   .align(Alignment.Center)
 
                   Row() {
                     Text("账号")
                       .margin({ right: 10 })
-                    Text(item.account)
+                    Text(item.getValue('account'))
                       .fontColor($r('app.color.gray_7'))
-
+                      .onClick(() => {
+                        item.toggleMask('account')
+                        this.forceUpdateList()
+                      })
                   }
 
                   Row() {
                     Text("密码")
                       .margin({ right: 10 })
-                    Text(item.pwd)
+                    Text(item.getValue('pwd'))
                       .fontColor($r('app.color.gray_7'))
+                      .onClick(() => {
+                        item.toggleMask('pwd')
+                        this.forceUpdateList()
+                      })
                   }
 
-                  if (item.note) {
+                  if (item.data.note) {
                     Row() {
                       Text("备注")
                         .margin({ right: 10 })
-                      Text(item.note)
+                      Text(item.data.note)
                         .fontColor($r('app.color.gray_7'))
 
                     }
                   }
-                  ForEach(item.bindings, (bindingItem: AccountBinding) => {
-                    AccountBindingInfo({
-                      type: bindingItem.type,
-                      bind: bindingItem.bind
-                    })
+                  ForEach(item.bindings, (bindingItem: AccountBindingViewModel) => {
+                    Row() {
+                      Text(bindingItem.typeLabel)
+                        .margin({ right: 10 })
+                      Text(bindingItem.getValue('bind'))
+                        .fontColor($r('app.color.gray_7'))
+                        .onClick(() => {
+                          bindingItem.toggleMask('bind')
+                          this.forceUpdateList()
+                        })
+                    }
                   })
                 }
                 .width('100%')
@@ -196,12 +229,12 @@ export struct AccountList {
 
       }
       .onClick(() => {
-        this.del(this.list[idx])
+        this.del(this.list[idx].data)
       })
       .backgroundColor(Color.Transparent)
 
       .padding(10)
-      // .height('100%')
+
 
       Button({ type: ButtonType.Normal }) {
         Row() {
@@ -212,7 +245,7 @@ export struct AccountList {
 
       }
       .onClick(() => {
-        this.edit(this.list[idx])
+        this.edit(this.list[idx].data)
       })
       .backgroundColor(Color.Transparent)
       .padding(10)
