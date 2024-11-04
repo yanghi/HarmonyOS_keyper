@@ -14,7 +14,9 @@ struct RecycleBin {
   @State list: AccountInterface[] = AccountListModel.deletedList
 
   aboutToAppear() {
-    AccountListModel.queryAllDeleted()
+    AccountListModel.queryAllDeleted().catch(() => {
+
+    })
     emitter.on({ eventId: EventId.AccountDeletedListUpdate }, () => {
       this.list = AccountListModel.deletedList.slice()
     })
@@ -108,9 +110,10 @@ struct RecycleBin {
           })
         }
       }
-      .backgroundColor($r('app.color.page_bg'))
       .padding({ top: CommonConstants.PAGE_CONTENT_TOP_GAP })
     }
+    .height('100%')
+    .backgroundColor($r('app.color.page_bg'))
   }
 
   @Builder ItemSwipeEnd(acc: AccountInterface) {
