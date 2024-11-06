@@ -34,9 +34,8 @@ class LockModel {
       if (this.lockData) {
         // 16 bytes
         let pwdMd = this.lockData.pwd
-        let withPwdKey = pwdMd + PWD_SALT.slice(0, 8)
 
-        cipherModel.setKeyMaterialBlob(withPwdKey)
+        cipherModel.setAESKeyBlob(pwdMd)
       }
       Logger.info(TAG, 'get lock ok, lockSetup=' + this.lockSetup)
     } catch (e) {

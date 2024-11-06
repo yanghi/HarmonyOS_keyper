@@ -1,7 +1,6 @@
 import router from '@ohos.router'
 import { AppLockType } from '../common/enums/app'
 import { AppRelationalStoreManager } from '../common/stores/relationalStore'
-import { AccountBindingListModel } from '../model/AccountBinding'
 import { cipherModel } from '../model/Cipher'
 import { AppLock } from '../model/Lock'
 import promptAction from '@ohos.promptAction'
@@ -44,6 +43,9 @@ struct LockEntry {
         this.lockType = AppLockType.Login
       } else {
         this.lockType = AppLockType.Create
+
+        // cipherModel.testAes()
+        // cipherModel.testAesBigJsonText()
       }
     })
   }
