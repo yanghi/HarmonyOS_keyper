@@ -1,4 +1,5 @@
 import { TopNavBar } from '../components/TopNavBar'
+import { ToolCheckPasswordStrength } from './ToolCheckPasswordStrength'
 import { ToolPasswordGenerate } from './ToolPasswordGenerate'
 
 @Component
@@ -35,6 +36,9 @@ export struct Tools {
           ToolPasswordGenerate()
         }.tabBar(this.TabBuilder(0, '密码生成'))
 
+        TabContent() {
+          ToolCheckPasswordStrength()
+        }.tabBar(this.TabBuilder(1, '强度检测'))
       }
       .barMode(BarMode.Fixed)
       .barWidth(200)
