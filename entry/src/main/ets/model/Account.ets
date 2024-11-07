@@ -39,7 +39,7 @@ export class AccountListModelCls {
 
   constructor() {
     //   mocks
-    if(useMockData()){
+    if (useMockData()) {
       this.list = mockAccountList()
       this.deletedList = mockAccountList()
     }
@@ -296,7 +296,7 @@ export class AccountListModelCls {
       Logger.info(LOG_TAG, sub + 'ok')
 
       this.deletedList = []
-      emitter.emit({ eventId: EventId.AccountBindingListUpdate }, { data: { list: this.deletedList } })
+      emitter.emit({ eventId: EventId.AccountDeletedListUpdate }, { data: { list: this.deletedList } })
     } catch (e) {
       Logger.error(LOG_TAG, sub + 'failed,' + stringifyError(e))
       throw e

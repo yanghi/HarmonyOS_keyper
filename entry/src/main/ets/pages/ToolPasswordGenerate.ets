@@ -52,10 +52,7 @@ export struct ToolPasswordGenerate {
   }
 
   generate() {
-    // if(1){
-    //   logger.debug(TAG, 'len ' + JSON.stringify(this.length))
-    //   return
-    // }
+
     let digits = []
     if (this.useUpperAlpha.use) {
       digits.push({
@@ -83,7 +80,7 @@ export struct ToolPasswordGenerate {
       })
     }
 
-    logger.debug('pwd', JSON.stringify(digits))
+    logger.debug(TAG, 'generate opts.digit', JSON.stringify(digits))
 
     let lengthData = this.useRandLength ? undefined : [this.fixedLength, this.fixedLength] as any
     let result = new PasswordGenerator({

@@ -5,6 +5,7 @@ import emitter from '@ohos.events.emitter'
 import { EventId } from '../common/enums/Event'
 import logger from '../common/utils/Logger'
 import { CommonConstants } from '../common/constants/CommonConstants'
+import promptAction from '@ohos.promptAction'
 
 const TAG = '[RecycleBin]'
 
@@ -48,7 +49,9 @@ struct RecycleBin {
         action: () => {
           logger.info(TAG, 'user confirm to clear all bin data')
           AccountListModel.hardDeleteAll().catch(() => {
-
+            promptAction.showToast({
+              message: '清空失败'
+            })
           })
         }
       },

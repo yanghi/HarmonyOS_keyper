@@ -1,5 +1,4 @@
-function asterisk(val: string, start: number, end = val.length - 2) {
-  // function  fill(val, start, end){
+function asterisk(val: string, start: number, end = val.length) {
 
   if (start > val.length - 1) {
     return val
@@ -19,16 +18,22 @@ function asterisk(val: string, start: number, end = val.length - 2) {
   return strArr.join('')
 }
 
-const EMAIL_REG = /@/
-const PHONE_REG = /d+/
+const EMAIL_REG = /^[A-Za-z0-9\u4e00-\u9fa5_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
+const PHONE_REG = /^(\+\d+\s)?\d+$/
 
 function desensitization(val: string) {
   if (EMAIL_REG.test(val)) {
     let f = val.indexOf('@')
-    return asterisk(val, 3, f)
+    if (f < 5) return asterisk(val, 0, 4)
+    return asterisk(val, 2, f)
   }
 
   if (val.length < 4) return asterisk(val, 0, 3)
+
+  if (PHONE_REG.test(val)) {
+    return asterisk(val, 2, -1)
+  }
+
   return asterisk(val, 1, -1)
 }
 
@@ -85,4 +90,3 @@ export class MaskObject<Data extends object, Keys extends Array<keyof Data>> {
     }
   }
 }
-

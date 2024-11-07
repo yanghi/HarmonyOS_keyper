@@ -2,6 +2,11 @@ import { AccountList } from './AccountList'
 import { BindingList } from './BindingList'
 import { Settings } from './Settings'
 import { Tools } from './Tools'
+import promptAction from '@ohos.promptAction'
+import common from '@ohos.app.ability.common'
+import logger from '../common/utils/Logger'
+
+const TAG = '[Index]'
 
 @Entry
 @Component
@@ -10,40 +15,85 @@ struct Index {
     // AppRelationalStoreManager.init()
   }
 
+  private pretime: number = 0;
+
+  onBackPress() {
+    let nowtime = Date.now();
+    if (nowtime - this.pretime < 1000) {
+      const mContext = getContext(this) as common.UIAbilityContext
+      logger.info(TAG, 'double back press')
+      mContext.terminateSelf();
+    } else {
+      this.pretime = nowtime;
+      promptAction.showToast({
+        message: '再按一次退出应用'
+      })
+    }
+
+    return true;
+  }
+
   @State current: number = 0
+
+  @Builder TabBuilder(opts: {
+    icon: string | Resource,
+    selectedIcon: string | Resource,
+    text: string,
+    index: number
+  }) {
+    Column() {
+      Image(this.current === opts.index ? opts.selectedIcon : opts.icon).width(24)
+      Text(opts.text)
+        .fontColor($r('app.color.gray_7'))
+        .fontSize(12)
+        .margin({ top: 2 })
+
+    }.width('100%')
+  }
 
   build() {
     Column() {
       Tabs({
-        index: 0
+        index: 1
       }) {
         TabContent() {
           AccountList()
-        }.tabBar({
-          text: '账号',
-          icon: this.current == 0 ? $r('app.media.tabbar_account_active_icon') : $r('app.media.tabbar_account_icon')
-        })
+        }.tabBar(
+          this.TabBuilder({
+            text: '账号',
+            index: 0,
+            icon: $r('app.media.tabbar_account_icon'),
+            selectedIcon: $r('app.media.tabbar_account_active_icon')
+          })
+        )
 
         TabContent() {
           BindingList()
-        }.tabBar({
-          text: '关联',
-          icon: this.current == 1 ? $r("app.media.tabbar_binding_active_icon") : $r("app.media.tabbar_binging_icon")
-        })
+        }.tabBar(
+          this.TabBuilder({
+            text: '关联',
+            index: 1,
+            icon: $r("app.media.tabbar_binging_icon"),
+            selectedIcon: $r("app.media.tabbar_binding_active_icon")
+          }))
 
         TabContent() {
           Tools()
-        }.tabBar({
+        }.tabBar(this.TabBuilder({
           text: '工具',
-          icon: this.current == 2 ? $r("app.media.tabbar_tools_active_icon") : $r("app.media.tabbar_tools_icon")
-        })
+          index: 2,
+          icon: $r("app.media.tabbar_tools_icon"),
+          selectedIcon: $r("app.media.tabbar_tools_active_icon"),
+        }))
 
         TabContent() {
           Settings()
-        }.tabBar({
+        }.tabBar(this.TabBuilder({
           text: '设置',
-          icon: this.current == 3 ? $r("app.media.tabbar_setting_active_icon") : $r('app.media.tabbar_setting_icon')
-        })
+          index: 3,
+          icon: $r("app.media.tabbar_setting_icon"),
+          selectedIcon: $r("app.media.tabbar_setting_active_icon"),
+        }))
       }
       .barPosition(BarPosition.End)
       .scrollable(false)
