@@ -32,6 +32,27 @@ function uint8ArrayToString(array) {
   return arrayString;
 }
 
+type CryptoMessage = string | cryptoFramework.DataBlob | Uint8Array
+
+function convertCryptoMessage(msg: CryptoMessage): cryptoFramework.DataBlob {
+  if (typeof msg == 'string') return { data: stringToUint8Array(msg) }
+
+  if (msg instanceof Uint8Array) return { data: msg }
+
+  if (msg.data && msg.data instanceof Uint8Array) return msg
+
+  throw { code: 401, msg: 'invalid CryptoMessage' }
+}
+
+interface CryptoParams {
+  key?: cryptoFramework.DataBlob
+  // decode or encode
+  textCode?: boolean
+}
+
+const defaultCryptoParams: CryptoParams = {
+  textCode: true
+}
 
 export class CipherModel {
   private _AESKeyBlob: Uint8Array | null = null
@@ -59,27 +80,31 @@ export class CipherModel {
     return Promise.resolve({ data: keyMaterial })
   }
 
-  private async getAesSymKey() {
+  private async getAesSymKey(keyData?: cryptoFramework.DataBlob) {
     let symKeyGenerator = cryptoFramework.createSymKeyGenerator(AES128)
 
     if (!symKeyGenerator) throw Error('createSymKeyGenerator err')
 
     Logger.info(TAG, 'aesEncrypt symKeyGenerator.convertKey')
-    const key = await symKeyGenerator.convertKey(await this.getAESKeyBlob())
+    const key = await symKeyGenerator.convertKey(keyData || await this.getAESKeyBlob())
 
     return key
   }
 
-  async aesEncrypt(message: string) {
+  async aesEncrypt(message: CryptoMessage, params: CryptoParams = defaultCryptoParams) {
 
-    const key = await this.getAesSymKey()
+    const key = await this.getAesSymKey(params.key)
 
     let cipher = cryptoFramework.createCipher(AES128_PKCS7);
 
     await cipher.init(cryptoFramework.CryptoMode.ENCRYPT_MODE, key, null)
 
-    let messageUint8 = new util.TextEncoder().encodeInto(message)
-    let r = await cipher.doFinal({ data: messageUint8 })
+    // let messageUint8 = new util.TextEncoder().encodeInto(message)
+    let msgBlob = typeof message === 'string' && params.textCode ?
+      { data: new util.TextEncoder().encodeInto(message) } :
+    convertCryptoMessage(message)
+
+    let r = await cipher.doFinal(msgBlob)
 
     if (r == null) {
       throw new Error('finalOutput is null')
@@ -93,9 +118,9 @@ export class CipherModel {
     return encryptedStr
   }
 
-  async aesDecrypt(message: string) {
+  async aesDecrypt(message: string, params: CryptoParams = defaultCryptoParams) {
     try {
-      const key = await this.getAesSymKey()
+      const key = await this.getAesSymKey(params.key)
 
       let cipher = cryptoFramework.createCipher(AES128_PKCS7);
 
@@ -103,7 +128,13 @@ export class CipherModel {
 
       let finalOutput = await cipher.doFinal({ data: stringToUint8Array(message) })
 
-      let decryptStr = util.TextDecoder.create('utf-8', { fatal: true }).decodeWithStream(finalOutput.data)
+      let decryptStr: string
+      if (params.textCode) {
+        decryptStr = util.TextDecoder.create('utf-8', { fatal: true }).decodeWithStream(finalOutput.data)
+      } else {
+        decryptStr = uint8ArrayToString(finalOutput.data)
+      }
+
 
       // Logger.debug(TAG, 'aesDecrypt str: ' + decryptStr)
       return decryptStr

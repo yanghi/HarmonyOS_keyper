@@ -1,3 +1,5 @@
+import util from '@ohos.util';
+
 export function isValidateIntId(id: any) {
   return typeof id == 'number' && id > 0
 }
@@ -29,7 +31,23 @@ export function uint8ArrayToString(array) {
 }
 
 export function stringifyError(e: unknown) {
-  if (e instanceof Error) return '' + e
+  if (e instanceof Error) {
+    if ('code' in e) {
+      return '' + e + ' code=' + (e as any).code
+    }
+    return '' + e
+  }
   if (typeof e === 'string') return 'Err:' + e
-  return 'Error:' + JSON.stringify(e)
+  if ((e as any).code) {
+    return 'Error<Obj>:' + JSON.stringify(e) + 'code=' + (e as any).code
+
+  }
+  return 'Error<Obj>:' + JSON.stringify(e)
+}
+
+export function ab2str(buf: ArrayBuffer): string {
+  let buffer = new Uint8Array(buf)
+  let readString = util.TextDecoder.create().decodeWithStream(buffer, { stream: false });
+
+  return readString
 }

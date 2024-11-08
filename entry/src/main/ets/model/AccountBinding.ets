@@ -4,7 +4,7 @@ import { AccountBinding, AccountBindingWithContactId } from '../common/interface
 import { AppRelationalStoreManager } from '../common/stores/relationalStore'
 import Logger from '../common/utils/Logger'
 import { rdbExtractResultRecords } from '../common/utils/DBUtils'
-import { dateTimeToDefaultString } from '../common/utils/common'
+import { dateTimeToDefaultString, stringifyError } from '../common/utils/common'
 import emitter from '@ohos.events.emitter'
 import { EventId } from '../common/enums/Event'
 import { AccountBindingContactListModel } from './AccountBindingContact'
@@ -145,6 +145,20 @@ export class AccountBindingListModelCls {
 
   hasBindingAccount(bindingId: number) {
     return AccountBindingContactListModel.hasBinding(bindingId)
+  }
+
+  async resetDataBaseData() {
+    let sub = 'Account binding resetDataBaseData() '
+
+    try {
+      await AppRelationalStoreManager.execute('DELETE FROM ' + CommonConstants.ACCOUNT_BINDING_TABLE_NAME)
+      this.list = []
+      emitter.emit({ eventId: EventId.AccountBindingListUpdate }, { data: { list: this.list } })
+
+    } catch (e) {
+      Logger.error(LOG_TAG, sub + 'failed,' + stringifyError(e))
+
+    }
   }
 }
 

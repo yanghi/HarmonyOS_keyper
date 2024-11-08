@@ -1,54 +1,46 @@
 import { CommonConstants } from '../common/constants/CommonConstants';
 import { AccountInterface } from '../common/interfaces/Account';
-import { AccountBinding } from '../common/interfaces/AccountBinding';
+import { AccountBinding, AccountBindingContact } from '../common/interfaces/AccountBinding';
 import Logger from '../common/utils/Logger'
 import picker from '@ohos.file.picker';
 import fs from '@ohos.file.fs';
-import { dateTimeToDefaultString, stringifyError } from '../common/utils/common';
+import {
+  ab2str,
+  dateTimeToDefaultString,
+  stringifyError,
+  stringToUint8Array,
+  uint8ArrayToShowStr,
+  uint8ArrayToString
+} from '../common/utils/common';
+import { cipherModel } from './Cipher';
+import cryptoFramework from '@ohos.security.cryptoFramework';
+import { AccountBindingListModel } from './AccountBinding';
+import { AccountListModel } from './Account';
+import { AccountBindingContactListModel } from './AccountBindingContact';
+import { AppLock } from './Lock';
+import { mockAccountList } from '../common/utils/MockData';
 
 const TAG = '[Converter]'
 
 class Converter {
-  async exportToExt(accounts: AccountInterface[]) {
-    let extStr = ''
+  toPlainText(accounts: AccountInterface[]) {
+    let txt = ''
     accounts.forEach(acc => {
-      extStr += this.fieldToStr('账号', acc.name)
-      extStr += this.fieldToStr('密码', acc.pwd)
-      extStr += this.fieldToStr('备注', acc.note)
+      txt += this.fieldToStr('账号', acc.name)
+      txt += this.fieldToStr('密码', acc.pwd)
+      txt += this.fieldToStr('备注', acc.note)
 
       acc.bindings.forEach(bd => {
-        extStr += this.bindingToStr(bd)
+        txt += this.bindingToStr(bd)
       })
 
-      extStr += this.fieldToStr('创建于', dateTimeToDefaultString(acc.createTime))
-      extStr += this.fieldToStr('更新于', dateTimeToDefaultString(acc.updateTime))
+      txt += this.fieldToStr('创建于', dateTimeToDefaultString(acc.createTime))
+      txt += this.fieldToStr('更新于', dateTimeToDefaultString(acc.updateTime))
 
-      extStr += '\n\n'
+      txt += '\n\n'
     })
 
-    const documentSaveOptions = new picker.DocumentSaveOptions();
-    documentSaveOptions.newFileNames = ["keyper.txt"];
-
-    const documentViewPicker = new picker.DocumentViewPicker();
-    try {
-      Logger.info(TAG, 'documentViewPicker.save')
-      let documentSaveResult = await  documentViewPicker.save(documentSaveOptions)
-      Logger.debug(TAG, 'uri' + documentSaveResult[0])
-      let uri = documentSaveResult[0];
-
-      Logger.info(TAG, 'documentViewPicker.save to file succeed and URI is:' + uri);
-      let file = fs.openSync(uri, fs.OpenMode.READ_WRITE);
-      Logger.info(TAG, 'file fd: ' + file.fd);
-
-      let writeLen = fs.writeSync(file.fd, extStr);
-      Logger.info(TAG, 'write data to file succeed and size is:' + writeLen);
-      fs.closeSync(file);
-    } catch (e) {
-      Logger.error(TAG, 'write failed, err:' + stringifyError(e) + ' msg ' + e?.message)
-      throw e
-    }
-
-    return extStr
+    return txt
   }
 
   private fieldToStr(name: string, value: string) {

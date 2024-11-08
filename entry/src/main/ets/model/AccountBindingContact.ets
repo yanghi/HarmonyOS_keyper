@@ -4,7 +4,7 @@ import { rdbExtractResultRecords } from '../common/utils/DBUtils'
 import { CommonConstants } from '../common/constants/CommonConstants'
 import { AccountBinding, AccountBindingContact, AccountBindingWithContactId } from '../common/interfaces/AccountBinding'
 import { AccountInterface } from '../common/interfaces/Account'
-import { dateTimeToDefaultString, isValidateIntId } from '../common/utils/common'
+import { dateTimeToDefaultString, isValidateIntId, stringifyError } from '../common/utils/common'
 import relationalStore from '@ohos.data.relationalStore'
 
 const LOG_TAG = '[AccountBindingContactListModel]'
@@ -197,6 +197,17 @@ class AccountBindingContactListModelCls {
 
   hasBinding(bindingId: number) {
     return this.list.findIndex(it => it.bindingId === bindingId) > -1
+  }
+
+  async resetDataBaseData() {
+    let sub = 'AccountContact resetDataBaseData() '
+
+    try {
+      await AppRelationalStoreManager.execute('DELETE FROM ' + CommonConstants.ACCOUNT_BINDING_CONTACT_TABLE_NAME)
+      this.list = []
+    } catch (e) {
+      Logger.error(LOG_TAG, sub + 'failed,' + stringifyError(e))
+    }
   }
 }
 

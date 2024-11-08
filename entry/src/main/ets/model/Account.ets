@@ -302,6 +302,22 @@ export class AccountListModelCls {
       throw e
     }
   }
+
+  async resetDataBaseData() {
+    let sub = 'Account resetDataBaseData() '
+
+    try {
+      await AppRelationalStoreManager.execute('DELETE FROM ' + CommonConstants.ACCOUNT_TABLE_NAME)
+      this.list = []
+      this.deletedList = []
+      emitter.emit({ eventId: EventId.AccountDeletedListUpdate }, { data: { list: this.deletedList } })
+      emitter.emit({ eventId: EventId.AccountListUpdate }, { data: { list: this.list } })
+
+    } catch (e) {
+      Logger.error(LOG_TAG, sub + 'failed,' + stringifyError(e))
+
+    }
+  }
 }
 
 export interface BindingContactAction {

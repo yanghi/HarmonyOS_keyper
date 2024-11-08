@@ -5,7 +5,7 @@ import { rdbExtractResultRecords } from '../common/utils/DBUtils'
 import cryptoFramework from '@ohos.security.cryptoFramework';
 
 import Logger from '../common/utils/Logger'
-import { stringToUint8Array, uint8ArrayToString } from '../common/utils/common'
+import { stringifyError, stringToUint8Array, uint8ArrayToString } from '../common/utils/common'
 import { cipherModel } from './Cipher'
 import { User } from '../common/interfaces/User'
 import { EventId, LockReason } from '../common/enums/Event'
@@ -44,6 +44,18 @@ class LockModel {
       Logger.info(TAG, 'get lock ok, lockSetup=' + this.lockSetup)
     } catch (e) {
       Logger.error(TAG, 'query lock failed, err:' + JSON.stringify(e))
+    }
+  }
+
+  async resetDataBaseData() {
+    let sub = 'AccountContact resetDataBaseData() '
+
+    try {
+      await AppRelationalStoreManager.execute('DELETE FROM ' + CommonConstants.LOCK_TABLE_NAME)
+      this.lockData = null
+      this.userList = []
+    } catch (e) {
+      Logger.error(TAG, sub + 'failed,' + stringifyError(e))
     }
   }
 

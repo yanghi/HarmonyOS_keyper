@@ -52,8 +52,8 @@ export function mockAccountList(): AccountInterface[] {
       account: '唐僧爱洗头',
       name: '大话西游',
       bindings: [{
-        type: AccountBindingType.Phone,
-        bind: '177',
+        type: AccountBindingType.Email,
+        bind: 'test@abc.com',
         createTime: '',
         updateTime: '',
         id: 0,
@@ -64,12 +64,12 @@ export function mockAccountList(): AccountInterface[] {
       id: 2,
     },
     {
-      pwd: '333',
+      pwd: 'sf.Fs333',
       account: 'gss',
       name: 'ABC',
       bindings: [{
-        type: AccountBindingType.Phone,
-        bind: '177',
+        type: AccountBindingType.Email,
+        bind: 'helloworld@word.com',
         createTime: '',
         updateTime: '',
         id: 0,
