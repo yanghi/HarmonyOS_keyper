@@ -17,7 +17,6 @@ export struct AccountList {
   // @State list: AccountInterface [] = []
   @State list: AccountViewModel[] = AccountListModel.list.map(a => new AccountViewModel(a))
   updateListEventHandle = () => {
-    Logger.debug(TAG, 'list' + AccountListModel.list?.length)
     this.list = AccountListModel.list.map(a => new AccountViewModel(a))
   }
 
@@ -190,18 +189,23 @@ export struct AccountList {
                 .shadow({ offsetX: 2, offsetY: 4, color: '#1f000000', radius: 6 })
 
               }.padding({ left: 10 })
-
+              .onClick(() => {
+                Logger.debug(TAG, 'click list col')
+              })
             }
             .width('100%')
             .swipeAction({ end: this.SwipeActions(idx) })
             .padding({ right: 10 })
+            .onClick(() => {
+              Logger.debug(TAG, 'click list')
+            })
           })
 
           if (this.list.length > 3) {
             ListItem() {
               Row() {
                 Text('没有更多了').fontSize(12).alignSelf(ItemAlign.Center).fontColor($r('app.color.gray_7'))
-              }.margin({ bottom: 60 })
+              }.margin({ bottom: 100, top: 40 })
               .justifyContent(FlexAlign.Center)
               .width('100%')
             }

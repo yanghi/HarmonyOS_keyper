@@ -7,16 +7,20 @@ import cryptoFramework from '@ohos.security.cryptoFramework';
 import Logger from '../common/utils/Logger'
 import { stringToUint8Array, uint8ArrayToString } from '../common/utils/common'
 import { cipherModel } from './Cipher'
+import { User } from '../common/interfaces/User'
+import { EventId, LockReason } from '../common/enums/Event'
+import emitter from '@ohos.events.emitter'
 
 const TAG = '[LockModel]'
 const PWD_SALT = 'VI6Vhf9kX1QNumH2FKkQFKHEqaK7OKXR'
 
 class LockModel {
   private locked: boolean = true
-  private lockTimeStamp: number = 0
-  private autoLockTime = 1000 * 60 * 2
+  private startCountTimeStamp: number = 0
+  private autoLockTime = 1000 * 60 * 5
   private lockData: Lock | null = null
   private lockSetup: boolean = false
+  userList: User[] = []
 
   async queryLock() {
     if (this.lockData) return this.lockData
@@ -30,7 +34,7 @@ class LockModel {
       })
       this.lockSetup = !!items.length
       this.lockData = items[0]
-
+      this.userList = items
       if (this.lockData) {
         // 16 bytes
         let pwdMd = this.lockData.pwd
@@ -85,28 +89,55 @@ class LockModel {
     }
   }
 
-  lock() {
+  lock(reason: LockReason) {
+    if (this.locked) return
     this.locked = true
-    this.lockTimeStamp = 0
+    this.startCountTimeStamp = 0
+
+    emitter.emit({ eventId: EventId.Lock }, { data: { reason } })
   }
 
   unlock() {
     this.locked = false
-    this.lockTimeStamp = Date.now()
+    this.startCountTimeStamp = 0
   }
 
+  private countTimer: number | null = null
+
   startCount() {
+    if (this.locked) return
+
+    clearInterval(this.countTimer)
+    this.startCountTimeStamp = Date.now()
+
+    this.countTimer = setInterval(() => {
+      if (this.isLocked()) {
+        clearInterval(this.countTimer)
+        this.countTimer = null
+      }
+    }, 1000)
+
     if (!this.locked) {
-      this.lockTimeStamp = Date.now()
+      this.startCountTimeStamp = Date.now()
     }
   }
 
-  isLocked() {
-    if (this.locked) return true
+  stopCount() {
+    clearInterval(this.countTimer)
+    this.countTimer = null
+  }
 
-    const diff = Date.now() - this.lockTimeStamp
+  resetCount() {
+    this.stopCount()
+    this.startCountTimeStamp = 0
+  }
+
+  isLocked() {
+    if (this.locked || !this.startCountTimeStamp) return this.locked
+
+    const diff = Date.now() - this.startCountTimeStamp
     if (diff > this.autoLockTime) {
-      this.lock()
+      this.lock(LockReason.Expired)
     }
 
     return this.locked

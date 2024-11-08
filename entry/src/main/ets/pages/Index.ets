@@ -5,6 +5,11 @@ import { Tools } from './Tools'
 import promptAction from '@ohos.promptAction'
 import common from '@ohos.app.ability.common'
 import logger from '../common/utils/Logger'
+import emitter from '@ohos.events.emitter'
+import { EventId, LockEventPayload } from '../common/enums/Event'
+import { AppLockType } from '../common/enums/app'
+import { AppLock } from '../model/Lock'
+import router from '@ohos.router'
 
 const TAG = '[Index]'
 
@@ -13,6 +18,27 @@ const TAG = '[Index]'
 struct Index {
   aboutToAppear() {
     // AppRelationalStoreManager.init()
+    logger.debug(TAG, 'aboutToAppear')
+
+    emitter.on({ eventId: EventId.AppBackground }, () => {
+      logger.info(TAG, 'onBackground event')
+      AppLock.startCount()
+    })
+    emitter.on({ eventId: EventId.AppForeground }, () => {
+      logger.info(TAG, 'onForeground event')
+      AppLock.resetCount()
+    })
+
+    emitter.on({ eventId: EventId.Lock }, (payload: emitter.EventData) => {
+      logger.debug(TAG, 'goto lock page when app locked, reason' + JSON.stringify(payload.data))
+      router.pushUrl({
+        url: 'pages/Lock'
+      })
+    })
+  }
+
+  aboutToDisappear() {
+    logger.debug(TAG, 'aboutToDisappear')
   }
 
   private pretime: number = 0;

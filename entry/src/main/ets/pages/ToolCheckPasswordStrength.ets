@@ -44,7 +44,7 @@ let default_block_colors = [inactive, inactive, inactive, inactive, inactive]
 @Component
 export struct ToolCheckPasswordStrength {
   @State checkResult: CheckPasswordStrengthResult | null = null
-  pwd: string = ''
+  @State pwd: string = ''
   @State strengthBlocks: Array<string | Resource> = default_block_colors
   @State tips: string[] = [
     '使用两种以上的组合,数字/小写字母/大写字母/标点符号',
@@ -60,12 +60,9 @@ export struct ToolCheckPasswordStrength {
     const colors = [danger, danger, warn, pass, pass]
     let activeColor = colors[result.strength]
     this.strengthBlocks = colors.map((color, idx) => {
-      logger.info(TAG, 'cls ' + idx + ' ac ' + result.strength + ' ' + (typeof result.strength))
-      // if() return inactive
 
       return idx > result.strength ? inactive : activeColor
     })
-    logger.info(TAG, 'col' + JSON.stringify(this.strengthBlocks))
   }
 
   handPwdChange(pwd: string) {
@@ -90,7 +87,6 @@ export struct ToolCheckPasswordStrength {
           } else {
             this.checkResult = null
           }
-
         })
       Row() {
         Row() {

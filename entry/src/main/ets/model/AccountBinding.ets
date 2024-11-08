@@ -35,7 +35,7 @@ export class AccountBindingListModelCls {
   private typeGroup: Map<AccountBindingType, AccountBinding[]> = new Map()
 
   constructor() {
-    if(useMockData()){
+    if (useMockData()) {
       this.list = mockBindingList()
     }
   }
@@ -123,12 +123,14 @@ export class AccountBindingListModelCls {
     emitter.emit({ eventId: EventId.AccountBindingListUpdate }, { data: { list: this.list } })
 
     Logger.info(LOG_TAG, "push new add binding " + JSON.stringify(newAdd))
+
+    return newAdd
   }
 
   async delete(id: number) {
     try {
       Logger.info(LOG_TAG, "delete binding, id=" + id)
-      await AppRelationalStoreManager.execute('DELETE FROM ' + CommonConstants.ACCOUNT_BINDING_CONTACT_TABLE_NAME + ' WHERE id=' + id)
+      await AppRelationalStoreManager.execute('DELETE FROM ' + CommonConstants.ACCOUNT_BINDING_TABLE_NAME + ' WHERE id=' + id)
 
       Logger.info(LOG_TAG, "delete binding ok, id=" + id)
       this.list = this.list.filter(ac => ac.id != id)

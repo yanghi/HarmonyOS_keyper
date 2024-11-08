@@ -8,6 +8,8 @@ import Logger from '../common/utils/Logger'
 import emitter from '@ohos.events.emitter'
 import { EventId } from '../common/enums/Event'
 import { TopNavBar } from '../components/TopNavBar'
+import { PasswordStrengthIndicator } from '../components/PasswordStrengthIndicator'
+import { CheckPasswordStrengthResult, PasswordStrength } from '../common/utils/CheckPasswordStrength'
 
 const TAG = '[LockEntry]'
 
@@ -21,6 +23,7 @@ struct LockEntry {
   resetPwdInputFlag = false
   @State confirmPwdPhase: boolean = false
   private verifyParams: any | null = null
+  passwordStrengthResult: CheckPasswordStrengthResult | null = null
 
   checkIsVerifyMode() {
     Logger.info(TAG, 'checkIsVerifyMode')
@@ -118,6 +121,36 @@ struct LockEntry {
     }
 
     if (this.lockType === AppLockType.Create) {
+      if (!this.confirmPwdPhase && this.passwordStrengthResult && this.passwordStrengthResult.strength < PasswordStrength.Mid) {
+        AlertDialog.show({
+          title: '提示',
+          message: '当前使用的密码强度过低,确定使用吗',
+          autoCancel: true,
+          alignment: DialogAlignment.Center,
+          gridCount: 4,
+          offset: { dx: 0, dy: -20 },
+          primaryButton: {
+            value: '确定',
+            fontColor: 'red',
+            action: () => {
+              Logger.info(TAG, 'user confirm use wak pwd')
+
+              this.createLock()
+            }
+          },
+          secondaryButton: {
+            value: '取消',
+            action: () => {
+
+            }
+          },
+          cancel: () => {
+
+          }
+        })
+        return
+      }
+
       this.createLock()
       return
     }
@@ -157,13 +190,14 @@ struct LockEntry {
   build() {
     Column() {
       if (this.lockType === AppLockType.Verify) {
-        TopNavBar({ back: true, title: this.verifyParams?.reasonTitle }) {
+        TopNavBar({ back: true, title: this.verifyParams?.reasonTitle ?? '' }) {
         }
       }
 
       Column() {
         Column() {
           Column() {
+            Image($r('app.media.account_lock')).width(50).margin({ bottom: 10 })
             Text(this.lockTitle())
               .fontSize(26)
               .fontWeight(FontWeight.Bold)
@@ -197,6 +231,14 @@ struct LockEntry {
               })
           }
 
+          if (this.lockType === AppLockType.Create && !this.confirmPwdPhase) {
+            PasswordStrengthIndicator({
+              password: this.pwd,
+              onStrengthResultChange: (res) => {
+                this.passwordStrengthResult = res
+              }
+            })
+          }
           Row() {
             Text(this.pwdErrTip)
               .fontColor('red')

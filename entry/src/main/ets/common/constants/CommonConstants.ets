@@ -66,4 +66,6 @@ export namespace CommonConstants {
   export const LabelMapAccountBindingType = new Map(AccountBindingTypeMapLabelEntries.map(v => ([v[1], v[0]])))
 
   export const PAGE_CONTENT_TOP_GAP = 25
+
+  export const PAGE_CONTENT_HORIZONTAL_GAP = 10
 }

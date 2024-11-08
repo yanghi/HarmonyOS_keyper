@@ -7,6 +7,7 @@ import { EventId } from '../common/enums/Event'
 import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
 import promptAction from '@ohos.promptAction'
 import { TopNavBar } from '../components/TopNavBar'
+import { CommonConstants } from '../common/constants/CommonConstants'
 
 @Component
 export struct BindingList {
@@ -79,7 +80,6 @@ export struct BindingList {
           })
         }
       }
-      .margin({ bottom: 25 })
 
       if (!this.list.length) {
         Row() {
@@ -102,8 +102,8 @@ export struct BindingList {
 
           }.swipeAction({ end: this.SwipeActions(idx) })
           .padding({
-            left: 10,
-            right: 10
+            left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+            right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
           })
 
         })
@@ -116,8 +116,10 @@ export struct BindingList {
             .width('100%')
           }
         }
-
       }
+      .padding({
+        top: CommonConstants.PAGE_CONTENT_TOP_GAP
+      })
     }
     .height('100%')
     .backgroundColor($r('app.color.page_bg'))

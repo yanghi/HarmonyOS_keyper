@@ -2,7 +2,7 @@ import router from '@ohos.router'
 
 @Component
 export struct TopNavBar {
-  private title: string
+  @Prop title: string
   private back: boolean = false
   @BuilderParam child: () => {}
 
