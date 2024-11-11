@@ -80,7 +80,7 @@ struct Index {
   build() {
     Column() {
       Tabs({
-        index: 1
+        index: 0
       }) {
         TabContent() {
           AccountList()

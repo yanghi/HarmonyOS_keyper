@@ -21,10 +21,6 @@ export struct BindingList {
     })
   }
 
-  onPageShow() {
-    Logger.info("BindingList onPageShow get list" + JSON.stringify(this.listModel.list))
-  }
-
   deleteBinding(binding: AccountBindingViewModel) {
     AlertDialog.show(
       {
@@ -57,6 +53,15 @@ export struct BindingList {
         }
       }
     )
+  }
+
+  edit(binding: AccountBindingViewModel) {
+    router.pushUrl({
+      url: 'pages/Binding',
+      params: {
+        id: binding.id
+      }
+    })
   }
 
   build() {
@@ -143,6 +148,20 @@ export struct BindingList {
       .padding(10)
       .height('100%')
       .padding({ left: 10 })
+
+      Button({ type: ButtonType.Normal }) {
+        Row() {
+          Image($r('app.media.edit_primary_icon')).width(16).margin({ right: 2 })
+          Text('编辑')
+            .fontColor($r('app.color.primary'))
+        }
+
+      }
+      .onClick(() => {
+        this.edit(this.list[idx])
+      })
+      .backgroundColor(Color.Transparent)
+      .padding(10)
     }
 
     .height('100%')
