@@ -17,6 +17,8 @@ import { AccountBinding, AccountBindingContact } from '../common/interfaces/Acco
 import { fsUtils } from '../common/utils/fsUtils'
 import { ConverterModel } from './ConverterModel'
 import { mockAccountList } from '../common/utils/MockData'
+import { AccountGroup } from '../common/interfaces/AccountGroup'
+import { AccountGroupListModel } from './AccountGroup'
 
 const TAG = '[DataManager]'
 const EXPORT_TXT_FILE_NAME = "keyper.txt"
@@ -106,18 +108,32 @@ class DataManager {
       total: {
         account: data.accounts.length,
         binding: data.bindings.length,
-        contact: data.bindings.length
+        contact: data.bindings.length,
+        group: data.groups.length,
       },
       succeed: {
         account: 0,
         binding: 0,
-        contact: 0
+        contact: 0,
+        group: 0
       }
     }
+    let sub = 'importDataToDb() '
+
     try {
       // old map new
       const newAccountIdMap = new Map<number, number>()
       const newBindingIdMap = new Map<number, number>()
+      const newGroupIdMap = new Map<number, number>()
+
+      let groupPromises = data.groups.map(gp => {
+        return AccountGroupListModel.add(gp).then(added => {
+          newGroupIdMap.set(gp.id, added.id)
+        })
+      })
+      let groupRes = await Promise.allSettled(groupPromises)
+      result.succeed.group = groupRes.filter(br => br.status === 'fulfilled').length
+
       let bindingPromises = data.bindings.map(bd => {
 
         return AccountBindingListModel.add(bd).then(added => {
@@ -129,10 +145,20 @@ class DataManager {
       result.succeed.binding = bindingRes.filter(br => br.status === 'fulfilled').length
 
       let accountPromises = data.accounts.map(ac => {
+        let groupId = newGroupIdMap.get(ac.groupId)
+        if (!groupId) {
+          Logger.error(
+            TAG,
+            sub
+            + 'account cannot contact correct groupId,reset to 0, origin account id='
+            + ac.id + ' groupId=' + ac.groupId
+          )
+        }
         return AccountListModel.add(ac).then((added) => {
           newAccountIdMap.set(ac.id, added.id)
         })
       })
+
       let accountRes = await Promise.allSettled(accountPromises)
       result.succeed.account = accountRes.filter(br => br.status === 'fulfilled').length
 
@@ -181,6 +207,7 @@ interface ImportCounts {
   account: number
   binding: number
   contact: number
+  group: number
 }
 
 interface ImportResult {
@@ -200,10 +227,11 @@ interface PortJson {
   version: number
   body: {
     data: {
-      accounts: any[]
+      accounts: AccountInterface[]
       bindings: AccountBinding[]
       contacts: AccountBindingContact[]
       users: any[]
+      groups: AccountGroup[]
     }
   }
 }
@@ -216,6 +244,12 @@ function mixSalt(s: string) {
 
 class PortCryptModel {
   private tag = '[PortConvertModel]'
+
+  private shimJson(json: PortJson) {
+    if (!json.body.data.groups) {
+      json.body.data.groups = []
+    }
+  }
 
   async input(raw: string): Promise<PortJson> {
     let sub = 'PortCryptModel.input() '
@@ -252,6 +286,8 @@ class PortCryptModel {
         version: json.version,
         body: bodyData,
       }
+
+      this.shimJson(encrypted)
 
       return encrypted
     } catch (e) {
@@ -301,14 +337,15 @@ class PortCryptModel {
     let bindings = AccountBindingListModel.list
     let contacts = AccountBindingContactListModel.list
     let users = AppLock.userList
-
+    let groups = AccountGroupListModel.list
 
     let bodyData: PortJson['body'] = {
       data: {
         bindings,
         accounts,
         contacts,
-        users
+        users,
+        groups
       }
     }
 

@@ -9,6 +9,8 @@ import { isValidateIntId } from '../common/utils/common'
 import { TopNavBar } from '../components/TopNavBar'
 import { PasswordStrengthIndicator } from '../components/PasswordStrengthIndicator'
 import { CommonConstants } from '../common/constants/CommonConstants'
+import { AccountGroupListModel, AccountGroupListModelCls } from '../model/AccountGroup'
+import { AccountGroupSelect } from '../components/AccountGroupSelect'
 
 interface AccountParams {
   id?: number
@@ -27,6 +29,8 @@ struct AccountEntry {
   foreUpdateLabelBindings() {
     this.labelBindings = this.labelBindings.concat()
   }
+
+  @State groupModel: AccountGroupListModelCls = AccountGroupListModel
 
   handleEditParams(ps: AccountParams) {
     if (ps.id) {
@@ -166,6 +170,23 @@ struct AccountEntry {
           .margin({ bottom: 10 })
 
           Flex() {
+            Text('分组')
+              .flexShrink(0)
+              .alignSelf(ItemAlign.Center)
+              .margin({ right: 10 })
+            AccountGroupSelect({
+              groupId: this.account.groupId,
+              groupModel: AccountGroupListModel,
+              onChange: (groupId: number) => {
+                this.account.groupId = groupId
+                Logger.debug(TAG, 'gid ' + groupId)
+              }
+            })
+          }
+          .alignSelf(ItemAlign.Center)
+          .margin({ bottom: 10 })
+
+          Flex() {
             Text('账号')
               .flexShrink(0)
               .alignSelf(ItemAlign.Center)
@@ -215,6 +236,36 @@ struct AccountEntry {
 
           }
           // .margin({ bottom: 10 })
+
+          Flex() {
+            Text('用户名')
+              .flexShrink(0)
+              .alignSelf(ItemAlign.Center)
+              .margin({ right: 10 })
+            TextInput({
+              text: this.account.userName
+            })
+              .onChange(v => {
+                this.account.userName = v
+              })
+          }
+          .alignSelf(ItemAlign.Center)
+          .margin({ bottom: 10 })
+
+          Flex() {
+            Text('昵称')
+              .flexShrink(0)
+              .alignSelf(ItemAlign.Center)
+              .margin({ right: 10 })
+            TextInput({
+              text: this.account.nickName
+            })
+              .onChange(v => {
+                this.account.nickName = v
+              })
+          }
+          .alignSelf(ItemAlign.Center)
+          .margin({ bottom: 10 })
 
 
           Row() {

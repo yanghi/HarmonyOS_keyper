@@ -1,4 +1,3 @@
-import { AccountBindingType } from '../common/enums/account'
 import { AccountInterface } from '../common/interfaces/Account'
 import { AppRelationalStoreManager } from '../common/stores/relationalStore'
 import Logger from '../common/utils/Logger'
@@ -13,6 +12,7 @@ import relationalStore from '@ohos.data.relationalStore'
 import { AccountBindingWithContactId } from '../common/interfaces/AccountBinding'
 import { cipherModel } from './Cipher'
 import { mockAccountList, useMockData } from '../common/utils/MockData'
+import { AccountGroupListModel } from './AccountGroup'
 
 const LOG_TAG = '[AccountModel]'
 
@@ -27,12 +27,15 @@ export class AccountModel {
       updateTime: '',
       id: -1,
       note: '',
+      groupId: 0,
+      nickName: '',
+      userName: ''
     }
   }
 }
 
 
-const ACCOUNT_CRYPT_KEYS: Array<keyof AccountInterface> = ['account', 'name', 'pwd', 'note']
+const ACCOUNT_CRYPT_KEYS: Array<keyof AccountInterface> = ['account', 'name', 'pwd', 'note', 'nickName', 'userName']
 
 export class AccountListModelCls {
   list: AccountInterface[] = []
@@ -70,23 +73,31 @@ export class AccountListModelCls {
       Logger.info(LOG_TAG, sub)
       let bindingPromise = AccountBindingListModel.queryAll()
       let bindingContactPromise = AccountBindingContactListModel.queryAll()
-      let resSet = await AppRelationalStoreManager.querySql("SELECT * FROM " + CommonConstants.ACCOUNT_TABLE_NAME + ' WHERE isDel=' + isDel)
+      let groupPromise = AccountGroupListModel.queryAll()
+      let resSet = await AppRelationalStoreManager.querySql(
+        "SELECT * FROM " + CommonConstants.ACCOUNT_TABLE_NAME + ' WHERE isDel=' + isDel
+      )
       let items = rdbExtractResultRecords(resSet, {
         'id': '- INT',
+        'groupId': '- INT',
         'createTime': '- DATETIME',
         'updateTime': '- DATETIME',
         'pwd': '- VARCHAR',
         'note': '- VARCHAR',
         'account': '- VARCHAR',
         'name': '- VARCHAR',
+        'nickName': '- VARCHAR',
+        'userName': '- VARCHAR',
       })
       Logger.info(LOG_TAG, sub + `ok, got ${items.length} items)`)
 
       let bindings = await bindingPromise
       let bindingContacts = await bindingContactPromise
-
+      await groupPromise
       AccountBindingContactListModel.contact(items, bindings, bindingContacts)
+
       for (let item of items) {
+        AccountGroupListModel.concatGroup(item)
         await this.decryptAccount(item)
       }
 

@@ -3,4 +3,8 @@ export enum AccountBindingType {
   Email = 1,
   QQ = 2,
   Wechat = 3,
+  ID,
+  Google,
+  AppleID,
+  HuaweiID
 }

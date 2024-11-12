@@ -12,11 +12,14 @@ export namespace CommonConstants {
            id INTEGER PRIMARY KEY AUTOINCREMENT,
            account CHAR(50) NOT NULL,
            name CHAR(50) NOT NULL,
+           userName CHAR(50),
+           nickName CHAR(50),
            note CHAR(100),
            pwd CHAR(50),
            createTime DATETIME,
            updateTime DATETIME,
-           isDel INTEGER DEFAULT 0
+           isDel INTEGER DEFAULT 0,
+           groupId INTEGER DEFAULT 0
           );
 `
 
@@ -54,11 +57,26 @@ export namespace CommonConstants {
              updateTime DATETIME
   );`
 
+
+  export const ACCOUNT_GROUP_TABLE_NAME = 'account_group'
+
+  export const SQL_CREATE_ACCOUNT_GROUP_TABLE = `CREATE TABLE IF NOT EXISTS ${ACCOUNT_GROUP_TABLE_NAME}
+             (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name CHAR(30),
+            createTime DATETIME,
+            updateTime DATETIME
+  );`
+
   const AccountBindingTypeMapLabelEntries: [AccountBindingType, string][] = [
     [AccountBindingType.Phone, '手机'],
     [AccountBindingType.Email, '邮箱'],
     [AccountBindingType.Wechat, '微信'],
     [AccountBindingType.QQ, 'QQ'],
+    [AccountBindingType.ID, '身份证'],
+    [AccountBindingType.Google, '谷歌账号'],
+    [AccountBindingType.AppleID, '苹果账号'],
+    [AccountBindingType.HuaweiID, '华为账号']
   ]
 
   export const AccountBindingTypeMapLabel = new Map(AccountBindingTypeMapLabelEntries)

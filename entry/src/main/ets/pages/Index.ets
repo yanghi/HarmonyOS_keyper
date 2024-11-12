@@ -10,6 +10,7 @@ import { EventId, LockEventPayload } from '../common/enums/Event'
 import { AppLockType } from '../common/enums/app'
 import { AppLock } from '../model/Lock'
 import router from '@ohos.router'
+import { AccountGroupListViewModel } from '../viewModel/AccountGroupListViewModel'
 
 const TAG = '[Index]'
 

@@ -3,25 +3,35 @@ import { AccountListModel } from '../model/Account'
 import router from '@ohos.router'
 import emitter from '@ohos.events.emitter'
 import { EventId } from '../common/enums/Event'
-import Logger from '../common/utils/Logger'
+import Logger, { logger } from '../common/utils/Logger'
 import promptAction from '@ohos.promptAction'
 import { TopNavBar } from '../components/TopNavBar'
 import { CommonConstants } from '../common/constants/CommonConstants'
 import { AccountViewModel } from '../viewModel/AccountViewModel'
 import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
+import { AccountGroupListViewModel, GroupedViewModelList } from '../viewModel/AccountGroupListViewModel'
 
 const TAG = '[Account list page]'
 
+let groupListViewModel = new AccountGroupListViewModel()
+
+function getGroupList() {
+  return groupListViewModel.groupViewModel(AccountListModel.list)
+}
+
 @Component
 export struct AccountList {
-  // @State list: AccountInterface [] = []
-  @State list: AccountViewModel[] = AccountListModel.list.map(a => new AccountViewModel(a))
+  @State groupedViewModelList: GroupedViewModelList[] = getGroupList()
+  @State accountLength: number = AccountListModel.list.length
   updateListEventHandle = () => {
-    this.list = AccountListModel.list.map(a => new AccountViewModel(a))
+    let p = this.groupedViewModelList
+    this.groupedViewModelList = getGroupList()
+    logger.debug(TAG, 'update group list ' + this.groupedViewModelList.length)
+    this.accountLength = AccountListModel.list.length
   }
 
   forceUpdateList() {
-    this.list = this.list.slice()
+    this.groupedViewModelList = this.groupedViewModelList.slice()
   }
 
   aboutToAppear() {
@@ -103,105 +113,113 @@ export struct AccountList {
           }
         }
 
-        if (!this.list.length) {
+        if (!this.accountLength) {
           Row() {
             Text('无账号数据').fontColor($r('app.color.gray_7'))
           }.height('100%')
         }
         List({ space: 10 }) {
-          ForEach(this.list, (item: AccountViewModel, idx) => {
-            ListItem() {
-              Column() {
-                Column() {
-                  Row() {
-                    Text(item.data.name)
-                      .align(Alignment.Center)
-                      .fontColor('#1890ff')
-                      .margin({ bottom: 6 })
-                    Button() {
+          ForEach(this.groupedViewModelList, (group) => {
+            ListItemGroup({ header: this.buildGroupHeader(group), space: 10 }) {
+              ForEach(group.list, (item: AccountViewModel, idx) => {
+                ListItem() {
+                  Column() {
+                    Column() {
                       Row() {
-                        Image(item.isAllMasked()
-                          ? $r('app.media.eye_open_primary_icon') : $r('app.media.eye_close_primary_icon')).width(18)
-                      }
+                        Text(item.data.name)
+                          .align(Alignment.Center)
+                          .fontColor('#1890ff')
+                          .margin({ bottom: 6 })
+                        Button() {
+                          Row() {
+                            Image(item.isAllMasked()
+                              ? $r('app.media.eye_open_primary_icon') : $r('app.media.eye_close_primary_icon'))
+                              .width(18)
+                          }
 
-                    }.backgroundColor(Color.Transparent)
-                    .margin({ left: 5 })
-                    .onClick(() => {
-                      item.toggleAllMask()
-                      this.forceUpdateList()
-                    })
-
-                  }.width('100%')
-                  .justifyContent(FlexAlign.SpaceBetween)
-                  .align(Alignment.Center)
-
-                  Row() {
-                    Text("账号")
-                      .margin({ right: 10 })
-                    Text(item.getValue('account'))
-                      .fontColor($r('app.color.gray_7'))
-                      .onClick(() => {
-                        item.toggleMask('account')
-                        this.forceUpdateList()
-                      })
-                  }
-
-                  Row() {
-                    Text("密码")
-                      .margin({ right: 10 })
-                    Text(item.getValue('pwd'))
-                      .fontColor($r('app.color.gray_7'))
-                      .onClick(() => {
-                        item.toggleMask('pwd')
-                        this.forceUpdateList()
-                      })
-                  }
-
-                  if (item.data.note) {
-                    Row() {
-                      Text("备注")
-                        .margin({ right: 10 })
-                      Text(item.data.note)
-                        .fontColor($r('app.color.gray_7'))
-
-                    }
-                  }
-                  ForEach(item.bindings, (bindingItem: AccountBindingViewModel) => {
-                    Row() {
-                      Text(bindingItem.typeLabel)
-                        .margin({ right: 10 })
-                      Text(bindingItem.getValue('bind'))
-                        .fontColor($r('app.color.gray_7'))
+                        }.backgroundColor(Color.Transparent)
+                        .margin({ left: 5 })
                         .onClick(() => {
-                          bindingItem.toggleMask('bind')
+                          item.toggleAllMask()
                           this.forceUpdateList()
                         })
+
+                      }.width('100%')
+                      .justifyContent(FlexAlign.SpaceBetween)
+                      .align(Alignment.Center)
+
+                      if (item.getValue('account')) {
+                        Row() {
+                          Text("账号")
+                            .margin({ right: 10 })
+                          Text(item.getValue('account'))
+                            .fontColor($r('app.color.gray_7'))
+                            .onClick(() => {
+                              item.toggleMask('account')
+                              this.forceUpdateList()
+                            })
+                        }
+                      }
+
+
+                      Row() {
+                        Text("密码")
+                          .margin({ right: 10 })
+                        Text(item.getValue('pwd'))
+                          .fontColor($r('app.color.gray_7'))
+                          .onClick(() => {
+                            item.toggleMask('pwd')
+                            this.forceUpdateList()
+                          })
+                      }
+
+                      if (item.data.note) {
+                        Row() {
+                          Text("备注")
+                            .margin({ right: 10 })
+                          Text(item.data.note)
+                            .fontColor($r('app.color.gray_7'))
+
+                        }
+                      }
+                      ForEach(item.bindings, (bindingItem: AccountBindingViewModel) => {
+                        Row() {
+                          Text(bindingItem.typeLabel)
+                            .margin({ right: 10 })
+                          Text(bindingItem.getValue('bind'))
+                            .fontColor($r('app.color.gray_7'))
+                            .onClick(() => {
+                              bindingItem.toggleMask('bind')
+                              this.forceUpdateList()
+                            })
+                        }
+                      })
                     }
+                    .width('100%')
+                    .padding(10)
+                    .alignItems(HorizontalAlign.Start)
+                    // .width('100%')
+                    .borderRadius(10)
+                    .backgroundColor(0xFFFFFF)
+                    .padding(10)
+                    .shadow({ offsetX: 2, offsetY: 4, color: '#1f000000', radius: 6 })
+
+                  }.padding({ left: 10 })
+                  .onClick(() => {
+                    Logger.debug(TAG, 'click list col')
                   })
                 }
                 .width('100%')
-                .padding(10)
-                .alignItems(HorizontalAlign.Start)
-                // .width('100%')
-                .borderRadius(10)
-                .backgroundColor(0xFFFFFF)
-                .padding(10)
-                .shadow({ offsetX: 2, offsetY: 4, color: '#1f000000', radius: 6 })
-
-              }.padding({ left: 10 })
-              .onClick(() => {
-                Logger.debug(TAG, 'click list col')
+                .swipeAction({ end: this.SwipeActions(item.data) })
+                .padding({ right: 10 })
+                .onClick(() => {
+                  Logger.debug(TAG, 'click list')
+                })
               })
             }
-            .width('100%')
-            .swipeAction({ end: this.SwipeActions(idx) })
-            .padding({ right: 10 })
-            .onClick(() => {
-              Logger.debug(TAG, 'click list')
-            })
           })
 
-          if (this.list.length > 3) {
+          if (this.accountLength > 3) {
             ListItem() {
               Row() {
                 Text('没有更多了').fontSize(12).alignSelf(ItemAlign.Center).fontColor($r('app.color.gray_7'))
@@ -220,17 +238,16 @@ export struct AccountList {
     .backgroundColor($r('app.color.page_bg'))
   }
 
-  @Builder SwipeActions(idx: number) {
+  @Builder SwipeActions(data: AccountInterface) {
     Row() {
       Button({ type: ButtonType.Normal }) {
         Row() {
           Image($r('app.media.delete_red_icon')).width(16).margin({ right: 2 })
           Text('删除').fontColor($r('app.color.error'))
         }
-
       }
       .onClick(() => {
-        this.del(this.list[idx].data)
+        this.del(data)
       })
       .backgroundColor(Color.Transparent)
 
@@ -246,11 +263,18 @@ export struct AccountList {
 
       }
       .onClick(() => {
-        this.edit(this.list[idx].data)
+        this.edit(data)
       })
       .backgroundColor(Color.Transparent)
       .padding(10)
       // .height('100%')
     }.height('100%')
+  }
+
+  @Builder buildGroupHeader(group: any) {
+    Row() {
+      Text(group.group.name).fontColor($r('app.color.gray_7')).fontWeight(FontWeight.Medium)
+    }.padding({ left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP })
+    .margin({ bottom: 8 })
   }
 }

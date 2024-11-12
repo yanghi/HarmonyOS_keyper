@@ -45,6 +45,9 @@ export function mockAccountList(): AccountInterface[] {
       }],
       createTime: '',
       updateTime: '',
+      nickName: '',
+      userName: '',
+      groupId: 0,
       id: 1,
     },
     {
@@ -61,6 +64,9 @@ export function mockAccountList(): AccountInterface[] {
       }],
       createTime: '',
       updateTime: '',
+      nickName: '',
+      userName: '',
+      groupId: 0,
       id: 2,
     },
     {
@@ -77,6 +83,9 @@ export function mockAccountList(): AccountInterface[] {
       }],
       createTime: '',
       updateTime: '',
+      nickName: '',
+      userName: '',
+      groupId: 0,
       id: 3,
     },
     {
@@ -94,6 +103,9 @@ export function mockAccountList(): AccountInterface[] {
       createTime: '',
       updateTime: '',
       id: 4,
+      nickName: '',
+      userName: '',
+      groupId: 0,
     },
     {
       pwd: '333',
@@ -110,10 +122,13 @@ export function mockAccountList(): AccountInterface[] {
       createTime: '',
       updateTime: '',
       id: 5,
+      nickName: '',
+      userName: '',
+      groupId: 0,
     },
   ]
 }
 
 export function useMockData(): boolean {
-  return true
+  return false
 }

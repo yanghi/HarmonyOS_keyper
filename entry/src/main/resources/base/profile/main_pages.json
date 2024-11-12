@@ -5,6 +5,7 @@
     "pages/Account",
     "pages/Binding",
     "pages/About",
-    "pages/RecycleBin"
+    "pages/RecycleBin",
+    "pages/AccountGroupList"
   ]
 }

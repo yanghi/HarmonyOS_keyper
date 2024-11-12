@@ -190,6 +190,14 @@ export struct Settings {
       List({ space: 10 }) {
         ListItemGroup() {
           ListItem() {
+            this.buildListItem('分组管理', () => {
+              router.pushUrl({
+                url: 'pages/AccountGroupList'
+              })
+            })
+          }.listItemStyles()
+
+          ListItem() {
             this.buildListItem('回收站', () => {
               router.pushUrl({
                 url: 'pages/RecycleBin'
@@ -197,6 +205,7 @@ export struct Settings {
             })
           }.listItemStyles()
         }
+        .divider({ strokeWidth: 1, endMargin: 15 })
 
         ListItemGroup({ header: this.itemHeader('数据') }) {
           // for test

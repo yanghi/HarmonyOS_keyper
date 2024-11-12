@@ -115,6 +115,7 @@ export const AppRelationalStoreManager = new RelationalStoreManager({
     db.execute(CommonConstants.SQL_CREATE_ACCOUNT_TABLE),
     db.execute(CommonConstants.SQL_CREATE_ACCOUNT_BINDING_CONTACT_TABLE),
     db.execute(CommonConstants.SQL_CREATE_LOCK_TABLE),
+    db.execute(CommonConstants.SQL_CREATE_ACCOUNT_GROUP_TABLE)
     ])
   }
 })

@@ -1,4 +1,5 @@
 import { AccountBindingWithContactId } from './AccountBinding';
+import { AccountGroup } from './AccountGroup';
 
 export interface AccountInterface {
   name: string
@@ -9,6 +10,10 @@ export interface AccountInterface {
   id: number
   updateTime: string
   createTime: string
+  groupId: number
+  group?: AccountGroup
+  userName: string
+  nickName: string
 }
 
 
