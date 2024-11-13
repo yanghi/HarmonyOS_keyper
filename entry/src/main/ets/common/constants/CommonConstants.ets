@@ -1,4 +1,5 @@
 import { AccountBindingType } from '../enums/account'
+import { AccountGroup } from '../interfaces/AccountGroup'
 
 export namespace CommonConstants {
   export const True = 1
@@ -86,4 +87,11 @@ export namespace CommonConstants {
   export const PAGE_CONTENT_TOP_GAP = 25
 
   export const PAGE_CONTENT_HORIZONTAL_GAP = 10
+}
+
+export const DEFAULT_GROUP: AccountGroup = {
+  id: 0,
+  name: '默认分组',
+  createTime: '',
+  updateTime: ''
 }

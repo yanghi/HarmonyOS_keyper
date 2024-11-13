@@ -4,12 +4,19 @@ import { AccountGroupListModel, AccountGroupListModelCls } from '../model/Accoun
 import promptAction from '@ohos.promptAction'
 import { CommonConstants } from '../common/constants/CommonConstants'
 import { CustomDialogAddGroup } from '../components/CustomDialogAddGroup'
+import logger from '../common/utils/Logger'
+
+const TAG = '[AccountGroupList]'
 
 @Component
 struct AccountGroupList {
   @ObjectLink listModel: AccountGroupListModelCls
+  @State editableGroup: AccountGroup | null = null
   dialogController: CustomDialogController | null = new CustomDialogController({
-    builder: CustomDialogAddGroup({}),
+    builder: CustomDialogAddGroup({
+      // textValue: this.editableGroup ? this.editableGroup.name : '',
+      editableData: $editableGroup
+    }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
     offset: { dx: 0, dy: -20 },
@@ -30,7 +37,10 @@ struct AccountGroupList {
   }
 
   edit(group: AccountGroup) {
-
+    this.editableGroup = group
+    logger.debug(TAG, 'edit ' + JSON.stringify(group))
+    // this.editDialogController = this.createDialogController()
+    this.dialogController.open()
   }
 
   add() {
@@ -71,11 +81,12 @@ struct AccountGroupList {
           .padding({
             left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
             right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-            top: CommonConstants.PAGE_CONTENT_TOP_GAP
           })
           .swipeAction({ end: this.buildSwipeAction(idx) })
         })
-      }
+      }.padding({
+        top: CommonConstants.PAGE_CONTENT_TOP_GAP
+      })
     }
     .backgroundColor($r('app.color.page_bg'))
     .height('100%')
@@ -99,19 +110,19 @@ struct AccountGroupList {
       .height('100%')
       .padding({ left: 10 })
 
-      // Button({ type: ButtonType.Normal }) {
-      //   Row() {
-      //     Image($r('app.media.edit_primary_icon')).width(16).margin({ right: 2 })
-      //     Text('编辑')
-      //       .fontColor($r('app.color.primary'))
-      //   }
-      //
-      // }
-      // .onClick(() => {
-      //   this.edit(this.listModel.list[idx])
-      // })
-      // .backgroundColor(Color.Transparent)
-      // .padding(10)
+      Button({ type: ButtonType.Normal }) {
+        Row() {
+          Image($r('app.media.edit_primary_icon')).width(16).margin({ right: 2 })
+          Text('编辑')
+            .fontColor($r('app.color.primary'))
+        }
+
+      }
+      .onClick(() => {
+        this.edit(this.listModel.list[idx])
+      })
+      .backgroundColor(Color.Transparent)
+      .padding(10)
     }.height('100%')
   }
 }

@@ -1,5 +1,11 @@
 import promptAction from '@ohos.promptAction'
+import { AccountGroup } from '../common/interfaces/AccountGroup'
+import logger from '../common/utils/Logger'
 import { AccountGroupListModel } from '../model/AccountGroup'
+
+const noop = () => {
+}
+const TAG = '[CustomDialogAddGroup]'
 
 @CustomDialog
 export struct CustomDialogAddGroup {
@@ -9,17 +15,51 @@ export struct CustomDialogAddGroup {
   confirm: () => void = () => {
 
   }
+  onAddNew: (group: AccountGroup) => void = noop
 
-  handleConfirm() {
+  add() {
+    return AccountGroupListModel.add({
+      name: this.textValue
+    }).then(added => {
+      this.onAddNew(added)
+      promptAction.showToast({
+        message: '创建成功'
+      })
+    }).catch(e => {
+      promptAction.showToast({
+        message: '创建失败'
+      })
+    })
+  }
+
+  update() {
+    return AccountGroupListModel.update({
+      ...this.editableData,
+      name: this.textValue
+    }).then(() => {
+      promptAction.showToast({
+        message: '修改成功'
+      })
+    }).catch(e => {
+      promptAction.showToast({
+        message: '修改失败'
+      })
+    })
+  }
+
+  async submit() {
     if (!this.textValue) {
       promptAction.showToast({
         message: '请输入分组名称'
       })
       return
     }
-    AccountGroupListModel.add({
-      name: this.textValue
-    })
+    if (this.editableData) {
+      await this.update()
+    } else {
+      await this.add()
+    }
+
 
     if (this.controller != undefined) {
       this.controller.close()
@@ -29,11 +69,22 @@ export struct CustomDialogAddGroup {
   }
 
   @State textValue: string = ''
-  @State edit: boolean = false
+  @Link
+  @Watch('onEditableDataChange')
+  editableData: AccountGroup | null
+
+  onEditableDataChange() {
+    this.textValue = this.editableData ? this.editableData.name : ''
+  }
+
+  aboutToAppear() {
+    logger.debug(TAG, 'aboutToAppear, editableData: ' + JSON.stringify(this.editableData))
+    this.textValue = this.editableData ? this.editableData.name : ''
+  }
 
   build() {
     Column() {
-      Text(this.edit ? '修改' : '添加分组')
+      Text(this.editableData ? '修改分组' : '添加分组')
         .fontSize(20)
         .margin({ top: 10, bottom: 10 })
       TextInput({ placeholder: '', text: this.textValue }).width('90%')
@@ -48,12 +99,11 @@ export struct CustomDialogAddGroup {
               this.cancel()
             }
           }).backgroundColor(0xffffff).fontColor(Color.Black)
-        Divider().vertical(true).width(1).height(24).alignSelf(ItemAlign.Center)
         Button('确定')
           .onClick(() => {
 
-            this.handleConfirm()
-          }).backgroundColor(0xffffff).fontColor(Color.Red)
+            this.submit()
+          }).backgroundColor(0xffffff).fontColor($r('app.color.primary'))
       }.margin({ bottom: 10, top: 10 })
     }
   }
