@@ -36,6 +36,12 @@ class AccountBindingContactListModelCls {
   async add(data: Omit<AccountBindingContact, 'id' | 'updateTime' | 'createTime'>) {
     try {
       Logger.info(LOG_TAG, 'add contact, accountId=' + data.accountId + ' bindingId=' + data.bindingId)
+      if (!data.accountId || !data.bindingId) {
+        throw {
+          code: 401,
+          msg: '参数错误'
+        }
+      }
       let values = {
         bindingId: data.bindingId,
         accountId: data.accountId,
@@ -69,7 +75,8 @@ class AccountBindingContactListModelCls {
     try {
       Logger.info(LOG_TAG, 'update contact, contact id=' + contact.id + ' bind id=' + contact.bindingId)
       let values = {
-        accountId: contact.id,
+        id: contact.id,
+        accountId: contact.accountId,
         bindingId: contact.bindingId,
         updateTime: Date.now()
       }

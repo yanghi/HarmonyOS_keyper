@@ -23,6 +23,10 @@
     {
       "name": "error",
       "value": "#f56c6c"
+    },
+    {
+      "name": "info",
+      "value": "#909399"
     }
   ]
 }

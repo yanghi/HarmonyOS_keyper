@@ -4,6 +4,9 @@ import { AccountBinding, AccountBindingWithContactId } from '../common/interface
 import { AccountBindingListModel, AccountBindingModel } from '../model/AccountBinding';
 import Logger from '../common/utils/Logger'
 import { MaskObject } from '../model/Mask';
+import promptAction from '@ohos.promptAction';
+import pasteboard from '@ohos.pasteboard';
+import { stringifyError } from '../common/utils/common';
 
 const TAG = '[AccountBindingViewModel]'
 type AccountMaskKeys = keyof Pick<AccountBindingData, 'bind'>
@@ -11,6 +14,7 @@ type AccountMaskKeys = keyof Pick<AccountBindingData, 'bind'>
 type AccountBindingData = AccountBindingWithContactId | AccountBinding
 const ACCOUNT_BINDING_MASK_KEYS: AccountMaskKeys[] = ['bind']
 
+@Observed
 export class AccountBindingViewModel extends MaskObject<AccountBindingData, Array<AccountMaskKeys>> {
   typeLabel: string
   private initCopy: AccountBindingWithContactId | AccountBinding
@@ -80,6 +84,21 @@ export class AccountBindingViewModel extends MaskObject<AccountBindingData, Arra
       this.id = binding.bindingId
       this.bind = binding.value as string
     }
+  }
+
+  copyBind() {
+    let label = this.typeLabel
+
+    let pasteboardData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, this.bind)
+
+    const sysPasteboard = pasteboard.getSystemPasteboard()
+    sysPasteboard.setData(pasteboardData).then(() => {
+      promptAction.showToast({
+        message: `${label}已复制到剪切板`
+      })
+    }).catch(e => {
+      Logger.error(TAG, 'paste data failed,' + stringifyError(e))
+    })
   }
 }
 

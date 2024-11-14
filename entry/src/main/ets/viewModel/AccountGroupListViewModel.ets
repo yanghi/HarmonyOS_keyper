@@ -1,3 +1,4 @@
+import { DEFAULT_GROUP } from '../common/constants/CommonConstants'
 import { AccountInterface } from '../common/interfaces/Account'
 import { AccountGroup } from '../common/interfaces/AccountGroup'
 import logger from '../common/utils/Logger'
@@ -9,7 +10,7 @@ export interface GroupedViewModelList {
   group: AccountGroup
 }
 
-const DEFAULT_GROUP_ID = 0
+const DEFAULT_GROUP_ID = DEFAULT_GROUP.id
 const TAG = '[AccountGroupListViewModel]'
 
 @Observed

@@ -157,17 +157,17 @@ export class AccountListModelCls {
     }
   }
 
-  async update(ac: AccountInterface, bindingsActions: BindingContactAction[]) {
+  async update(account: AccountInterface, bindingContactActions: BindingContactAction[]) {
     try {
-      Logger.info(LOG_TAG, 'update id=' + ac.id)
-      let originIdx = this.list.findIndex(it => it.id === ac.id)
+      Logger.info(LOG_TAG, 'update id=' + account.id)
+      let originIdx = this.list.findIndex(it => it.id === account.id)
       if (originIdx == -1) {
-        Logger.error('cannot find target account by id=' + ac.id)
-        throw new Error('cannot find target account by id=' + ac.id)
+        Logger.error('cannot find target account by id=' + account.id)
+        throw new Error('cannot find target account by id=' + account.id)
       }
 
       let values = {
-        ...ac,
+        ...account,
         updateTime: Date.now(),
       }
       delete values['createTime']
@@ -175,42 +175,48 @@ export class AccountListModelCls {
 
       let updated = {
         ...values,
-        createTime: ac.createTime,
+        createTime: account.createTime,
         updateTime: dateTimeToDefaultString(values.updateTime),
       }
       Logger.info(LOG_TAG, 'values ' + JSON.stringify(values))
       let predicate = new relationalStore.RdbPredicates(CommonConstants.ACCOUNT_TABLE_NAME)
-      predicate.equalTo('id', ac.id)
+      predicate.equalTo('id', account.id)
 
       let rowId = await AppRelationalStoreManager.update(values as any, predicate)
 
       let newBindings: AccountBindingWithContactId[] = []
 
       let upsertPromises: Promise<any>[] = []
-      bindingsActions.forEach(act => {
+      // Logger.debug(LOG_TAG, 'bind ' + JSON.stringify(bindingContactActions))
+
+      bindingContactActions.forEach(act => {
         if (act.action === 'add') {
           newBindings.push(act.data)
-          upsertPromises.push(AccountBindingContactListModel.add(act.data as any).then(add => {
+          upsertPromises.push(AccountBindingContactListModel.add({
+            accountId: account.id,
+            bindingId: act.data.id,
+
+          }).then(add => {
             act.data.contactId = add.id
             act.data.createTime = add.createTime
             act.data.updateTime = add.createTime
           }))
         } else if (act.action == 'delete') {
-          upsertPromises.push(AccountBindingContactListModel.delete(act.data.id))
+          upsertPromises.push(AccountBindingContactListModel.delete(act.data.contactId))
         } else if (act.action == 'update') {
           upsertPromises.push(AccountBindingContactListModel.update({
             id: act.data.contactId,
             bindingId: act.data.id,
-            accountId: act.data.contactId,
+            accountId: account.id,
           }))
           newBindings.push(act.data)
         }
       })
 
       if (upsertPromises.length) {
-        Logger.info(LOG_TAG, 'upsert account bindings, account id=' + ac.id)
+        Logger.info(LOG_TAG, 'upsert account bindings, account id=' + account.id)
         await Promise.all(upsertPromises)
-        Logger.info(LOG_TAG, 'upsert account bindings ok, account id=' + ac.id)
+        Logger.info(LOG_TAG, 'upsert account bindings ok, account id=' + account.id)
       }
 
       updated.bindings = newBindings
@@ -220,7 +226,7 @@ export class AccountListModelCls {
 
       emitter.emit({ eventId: EventId.AccountListUpdate }, { data: { list: this.list } })
     } catch (e) {
-      Logger.error(LOG_TAG, 'account update failed, id=' + ac.id + ', err:' + JSON.stringify(e))
+      Logger.error(LOG_TAG, 'account update failed, id=' + account.id + ', err:' + JSON.stringify(e))
       throw e
     }
   }
