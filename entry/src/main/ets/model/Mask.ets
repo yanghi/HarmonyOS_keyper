@@ -40,6 +40,11 @@ function desensitization(val: string) {
 export class MaskObject<Data extends object, Keys extends Array<keyof Data>> {
   masked: Record<Keys[0], boolean>
   private _maskedData: Record<Keys[0], string>
+  private updateTimeStamp: number = 0
+
+  private update() {
+    this.updateTimeStamp = Date.now()
+  }
 
   constructor(public data: Data, keys: Keys, private  options: { initMask?: boolean } = { initMask: true }) {
     this.masked = {} as any
@@ -70,6 +75,7 @@ export class MaskObject<Data extends object, Keys extends Array<keyof Data>> {
   toggleMask(key: Keys[0]) {
 
     this.masked[key] = !this.masked[key]
+    this.update()
   }
 
   toggleAllMask() {

@@ -4,19 +4,32 @@ import { AccountListModel, AccountModel, BindingContactAction } from '../model/A
 import { AccountInterface } from '../common/interfaces/Account'
 import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
 import promptAction from '@ohos.promptAction'
-import Logger from '../common/utils/Logger'
+import Logger, { logger } from '../common/utils/Logger'
 import { isValidateIntId } from '../common/utils/common'
 import { TopNavBar } from '../components/TopNavBar'
 import { PasswordStrengthIndicator } from '../components/PasswordStrengthIndicator'
 import { CommonConstants } from '../common/constants/CommonConstants'
 import { AccountGroupListModel, AccountGroupListModelCls } from '../model/AccountGroup'
 import { AccountGroupSelect } from '../components/AccountGroupSelect'
+import { DescItem } from '../components/DescItem'
+import { AccountBindingSelect } from '../components/AccountBindingSelect'
 
 interface AccountParams {
   id?: number
 }
 
 const TAG = '[AccountEntry]'
+
+const ItemGutter = 5
+
+@Styles function SectionCard() {
+  .borderRadius(10)
+  .backgroundColor(Color.White)
+  .shadow({ offsetX: 2, offsetY: 4, color: '#1f000000', radius: 6 })
+  .padding(10)
+  .margin({ bottom: 10 })
+}
+
 
 @Entry
 @Component
@@ -25,6 +38,7 @@ struct AccountEntry {
   @State isEdit: boolean = false
   @State labelBindings: AccountBindingViewModel[] = [
     new AccountBindingViewModel(AccountBindingModel.emptyData())]
+  @State showBindingSelect: boolean = false
 
   foreUpdateLabelBindings() {
     this.labelBindings = this.labelBindings.concat()
@@ -80,7 +94,6 @@ struct AccountEntry {
         message: '创建账号失败'
       })
     })
-
   }
 
   async update() {
@@ -145,20 +158,23 @@ struct AccountEntry {
     this.labelBindings.push(new AccountBindingViewModel(AccountBindingModel.emptyData()))
   }
 
+  @Builder SectionTitle(title: string) {
+    Flex() {
+      Text(title).fontColor(Color.Black).fontSize(18).margin({ bottom: 6 }).fontWeight(FontWeight.Bold)
+    }
+  }
+
   build() {
-    Row() {
+
+    Column() {
+      TopNavBar({ title: this.isEdit ? '编辑账号' : '添加账号', back: true }) {
+
+      }
 
       Column() {
-        TopNavBar({ title: this.isEdit ? '编辑账号' : '添加账号', back: true }) {
-
-        }
-
+        this.SectionTitle('基本信息')
         Column() {
-          Flex() {
-            Text('名称')
-              .flexShrink(0)
-              .alignSelf(ItemAlign.Center)
-              .margin({ right: 10 })
+          DescItem({ label: '名称', gutter: ItemGutter, required: true }) {
             TextInput({
               text: this.account.name
             })
@@ -166,14 +182,8 @@ struct AccountEntry {
                 this.account.name = v
               })
           }
-          .alignSelf(ItemAlign.Center)
-          .margin({ bottom: 10 })
 
-          Flex() {
-            Text('分组')
-              .flexShrink(0)
-              .alignSelf(ItemAlign.Center)
-              .margin({ right: 10 })
+          DescItem({ label: '分组', gutter: ItemGutter }) {
             AccountGroupSelect({
               groupId: this.account.groupId,
               groupModel: AccountGroupListModel,
@@ -183,65 +193,114 @@ struct AccountEntry {
               }
             })
           }
-          .alignSelf(ItemAlign.Center)
-          .margin({ bottom: 10 })
 
-          Flex() {
-            Text('账号')
-              .flexShrink(0)
-              .alignSelf(ItemAlign.Center)
-              .margin({ right: 10 })
+          DescItem({ label: '密码', gutter: 0 }) {
             TextInput({
-              text: this.account.account
+              text: this.account.pwd,
             })
+              .type(InputType.Password)
               .onChange(v => {
-                this.account.account = v
+                this.account.pwd = v
               })
-          }
-          .margin({ bottom: 10 })
-
-          Flex() {
-            Column() {
-              Text('密码')
-            }
-            .flexShrink(0)
-            .alignSelf(ItemAlign.Center)
-            .margin({ right: 10 })
-
-            Column() {
-              TextInput({
-                text: this.account.pwd,
-              })
-                .type(InputType.Password)
-                .onChange(v => {
-                  this.account.pwd = v
-                })
-            }
-
+          }.margin({ top: ItemGutter })
+          // 密码强度提示
+          DescItem({ label: '', gutter: 0 }) {
+            PasswordStrengthIndicator({
+              password: this.account.pwd
+            })
           }
 
-          Flex() {
-            Column() {
-              Text('密码').fontColor(Color.Transparent)
+          DescItem({ label: '关联', gutter: ItemGutter }) {
+            Button() {
+              Row() {
+                Text('新增关联').fontColor($r('app.color.primary'))
+              }
             }
-            .flexShrink(0)
-            .alignSelf(ItemAlign.Center)
-            .margin({ right: 10 })
+            .backgroundColor(Color.Transparent)
+            .onClick(() => {
+              router.pushUrl({
+                url: 'pages/Binding'
+              })
+            })
 
-            Row() {
-              PasswordStrengthIndicator({
-                password: this.account.pwd
+          }
+          // 关联二级输入
+          DescItem({ label: '', gutter: ItemGutter }) {
+            Column() {
+
+              ForEach(this.labelBindings, (bindingItem: AccountBindingViewModel, index) => {
+                Row() {
+                  Row() {
+                    Select(bindingOptions)
+                      .value(bindingItem.typeLabel)
+                      .onSelect((idx, v) => {
+                        bindingItem.setTypeLabel(v)
+                        bindingItem.bind = ''
+                        this.foreUpdateLabelBindings()
+                      })
+                      .alignSelf(ItemAlign.Center)
+                      .margin({ right: 15 })
+                      .selectedOptionFont({
+                        size: 14,
+                        weight: FontWeight.Lighter
+                      })
+
+
+                    if (bindingItem.getCurrentTypeContactOptions().length) {
+                      Select(bindingItem.getCurrentTypeContactOptions())
+                        .value(bindingItem.bind)
+                        .onSelect((idx, v) => {
+                          bindingItem.contactCurrentTypeBindingWithIdx(idx)
+                        })
+                    } else {
+                      Text("无数据").fontColor($r('app.color.gray_6')).alignSelf(ItemAlign.Center).fontSize(14)
+                    }
+                  }
+
+                  Row() {
+                    if (this.labelBindings.length > 1) {
+
+                      Button() {
+                        Row() {
+                          Image($r('app.media.remove_red')).width(16).margin({ right: 2 })
+                          // Text('移除').fontColor($r('app.color.error')).fontSize(14)
+                        }
+                      }
+                      .margin({ left: 5 })
+                      .backgroundColor(Color.Transparent)
+                      .onClick(() => {
+                        this.dropBinding(index)
+                      })
+                    }
+
+                    Button() {
+                      Row() {
+                        Image($r('app.media.add_primary')).width(16).margin({ right: 2 })
+                        // Text('添加').fontColor($r('app.color.primary')).fontSize(14)
+                      }
+                    }
+                    .margin({ left: 5 })
+
+                    .backgroundColor(Color.Transparent)
+                    .onClick(() => {
+                      this.pushEmptyBinding()
+                    })
+                  }
+                  .alignSelf(ItemAlign.Center)
+                }
+                // .margin({ top: 5 })
+                .width('100%')
+                .justifyContent(FlexAlign.SpaceBetween)
               })
             }
 
           }
-          // .margin({ bottom: 10 })
+        }
+        .SectionCard()
 
-          Flex() {
-            Text('用户名')
-              .flexShrink(0)
-              .alignSelf(ItemAlign.Center)
-              .margin({ right: 10 })
+        this.SectionTitle('附加信息')
+        Column() {
+          DescItem({ label: '用户名', gutter: ItemGutter }) {
             TextInput({
               text: this.account.userName
             })
@@ -249,14 +308,8 @@ struct AccountEntry {
                 this.account.userName = v
               })
           }
-          .alignSelf(ItemAlign.Center)
-          .margin({ bottom: 10 })
 
-          Flex() {
-            Text('昵称')
-              .flexShrink(0)
-              .alignSelf(ItemAlign.Center)
-              .margin({ right: 10 })
+          DescItem({ label: '昵称', gutter: ItemGutter }) {
             TextInput({
               text: this.account.nickName
             })
@@ -264,132 +317,34 @@ struct AccountEntry {
                 this.account.nickName = v
               })
           }
-          .alignSelf(ItemAlign.Center)
-          .margin({ bottom: 10 })
 
 
-          Row() {
-            Text('关联')
-            Button() {
-              Row() {
-                Image($r('app.media.add_primary')).width(16).height(16).margin({ right: 5 })
-                Text('创建关联').fontColor($r('app.color.primary')).fontSize(14)
-              }
-            }
-            .backgroundColor(Color.Transparent)
-            .margin({ left: 20 })
-            .onClick(() => {
-              router.pushUrl({
-                url: 'pages/Binding'
-              })
-            })
-          }
-          .alignSelf(ItemAlign.Start)
-          .justifyContent(FlexAlign.SpaceBetween)
-
-          ForEach(this.labelBindings, (bindingItem: AccountBindingViewModel, index) => {
-            Row() {
-              Row() {
-                Select(bindingOptions)
-                  .value(bindingItem.typeLabel)
-                  .onSelect((idx, v) => {
-                    bindingItem.setTypeLabel(v)
-                    bindingItem.bind = ''
-                    this.foreUpdateLabelBindings()
-                  })
-                  .alignSelf(ItemAlign.Center)
-                  .margin({ right: 15 })
-                  .selectedOptionFont({
-                    size: 14,
-                    weight: FontWeight.Lighter
-                  })
-
-
-                if (bindingItem.getCurrentTypeContactOptions().length) {
-                  Select(bindingItem.getCurrentTypeContactOptions())
-                    .value(bindingItem.bind)
-                    .onSelect((idx, v) => {
-                      bindingItem.contactCurrentTypeBindingWithIdx(idx)
-                    })
-                } else {
-                  Text("无数据").fontColor($r('app.color.gray_6')).alignSelf(ItemAlign.Center).fontSize(14)
-                }
-              }
-
-              Row() {
-                if (this.labelBindings.length > 1) {
-
-                  Button() {
-                    Row() {
-                      Image($r('app.media.remove_red')).width(16).margin({ right: 2 })
-                      // Text('移除').fontColor($r('app.color.error')).fontSize(14)
-                    }
-                  }
-                  .margin({ left: 5 })
-                  .backgroundColor(Color.Transparent)
-                  .onClick(() => {
-                    this.dropBinding(index)
-                  })
-                }
-
-                Button() {
-                  Row() {
-                    Image($r('app.media.add_primary')).width(16).margin({ right: 2 })
-                    // Text('添加').fontColor($r('app.color.primary')).fontSize(14)
-                  }
-                }
-                .margin({ left: 5 })
-
-                .backgroundColor(Color.Transparent)
-                .onClick(() => {
-                  this.pushEmptyBinding()
-                })
-              }
-              .alignSelf(ItemAlign.Center)
-            }
-            // .margin({ top: 5 })
-            .width('100%')
-            .justifyContent(FlexAlign.SpaceBetween)
-          })
-          //
-          // Row() {
-          //
-          // }.justifyContent(FlexAlign.End)
-          // .width('100%')
-          // .margin({bottom: 10})
-
-          Flex() {
-            Column() {
-              Text('备注')
-            }
-            .flexShrink(0)
-            .alignSelf(ItemAlign.Center)
-            .margin({ right: 10 })
-
+          DescItem({ label: '备注', gutter: ItemGutter }) {
             TextInput({
               text: this.account.note,
             }).onChange(v => {
               this.account.note = v
             })
           }
-          .margin({ top: 10 })
-          // submit
-          Row() {
-            Button('保存')
-              .width('80%')
-              .padding(10)
-              .margin({ top: 40 })
-              .onClick(() => {
-                this.submit()
-              })
-          }
         }
-        .padding({
-          left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-          right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-          top: CommonConstants.PAGE_CONTENT_TOP_GAP
-        })
+        .SectionCard()
+
+        // submit
+        Row() {
+          Button('保存')
+            .width('80%')
+            .padding(10)
+            .margin({ top: 40 })
+            .onClick(() => {
+              this.submit()
+            })
+        }
       }
+      .padding({
+        left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+        right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+        top: CommonConstants.PAGE_CONTENT_TOP_GAP
+      })
     }
   }
 }

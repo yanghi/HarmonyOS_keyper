@@ -19,7 +19,7 @@ struct RecycleBin {
 
     })
     emitter.on({ eventId: EventId.AccountDeletedListUpdate }, () => {
-      this.list = AccountListModel.deletedList.slice()
+      this.list = AccountListModel.deletedList?.slice() || []
     })
   }
 

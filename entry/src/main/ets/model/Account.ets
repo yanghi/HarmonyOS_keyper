@@ -105,8 +105,8 @@ export class AccountListModelCls {
 
     } catch (e) {
       Logger.error(LOG_TAG, sub + ' failed, err:' + JSON.stringify(e))
+      throw e
     }
-
   }
 
   async add(ac: AccountInterface) {

@@ -7,43 +7,14 @@ import { CommonConstants, DEFAULT_GROUP } from '../common/constants/CommonConsta
 import logger from '../common/utils/Logger'
 import { AccountInterface } from '../common/interfaces/Account'
 import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
+import { requestDeleteAccount } from '../common/utils/Actions'
+import { DescItem } from '../components/DescItem'
 
 
 interface AccountDetailParams {
   id: number
 }
 
-@Component
-struct DescItem {
-  @Prop label: string
-  @BuilderParam child: () => {}
-
-  getChars() {
-    return this.label.split('')
-  }
-
-  build() {
-    Flex() {
-      Row() {
-        ForEach(this.getChars(), (char: string) => {
-          Text(char)
-        })
-      }
-      .justifyContent(FlexAlign.SpaceBetween)
-      .flexShrink(0)
-      .width(60)
-      .padding({ right: 10 })
-
-      if (this.child) {
-        this.child()
-      }
-    }
-    .padding({
-      top: 2,
-      bottom: 2
-    })
-  }
-}
 
 @Component
 struct DescText {
@@ -67,10 +38,27 @@ const TAG = '[AccountDetail]'
 
 @Component
 struct AccountDetail {
-  @ObjectLink account: AccountViewModel
+  @ObjectLink @Watch('onAccountChange') account: AccountViewModel
+
+  onAccountChange() {
+    logger.debug(TAG, 'set cp keys')
+    this.copyMenuOptions = this.account.copyableKeys().map(k => ({
+      id: k,
+      text: this.account.keyLabel(k)
+    }))
+  }
 
   del() {
+    requestDeleteAccount(this.account.data).then(() => {
+      router.back()
+    }).catch(() => {
 
+    })
+  }
+
+  aboutToAppear() {
+    logger.debug(TAG, 'aboutToAppear')
+    this.onAccountChange()
   }
 
   edit() {
@@ -113,6 +101,26 @@ struct AccountDetail {
     }
   }
 
+  @State copyMenuOptions: Array<{
+    id: string,
+    text: string
+  }> = []
+
+  @Builder CopyMenuBuilder() {
+    Menu() {
+      ForEach(this.copyMenuOptions, (item) => {
+        MenuItem({
+          content: item.text
+        }).onClick(() => {
+          // this.account.
+          logger.debug(TAG, 'cp ' + item.id)
+          this.account.copyProp(item.id)
+        })
+      })
+    }
+
+  }
+
   build() {
     Column() {
       TopNavBar({ title: '账号详情', back: true }) {
@@ -120,103 +128,174 @@ struct AccountDetail {
 
       Column() {
         Column() {
-          Row() {
-            Text(this.account.data.name)
-              .fontColor($r('app.color.primary'))
-              .fontSize(20)
-              .fontWeight(FontWeight.Bolder)
-              .textAlign(TextAlign.Start)
+          Column() {
+            Row() {
+              Text(this.account.data.name)
+                .fontColor($r('app.color.primary'))
+                .fontSize(20)
+                .fontWeight(FontWeight.Bolder)
+                .textAlign(TextAlign.Start)
+
+              Row() {
+                Button() {
+                  Row() {
+                    Image(this.account.isAllMasked()
+                      ? $r('app.media.eye_open_primary_icon') : $r('app.media.eye_close_primary_icon'))
+                      .width(18)
+                  }
+
+                }.backgroundColor(Color.Transparent)
+                .margin({ left: 5 })
+                .onClick(() => {
+                  this.account.toggleAllMask()
+                  logger.debug(TAG, 'tg mask')
+                  this.account.forceUpdateBindingList()
+                  // this.forceUpdateList()
+                })
+
+              }
+            }.margin({ bottom: 3 })
+            .width('100%')
+            .justifyContent(FlexAlign.SpaceBetween)
 
             Row() {
-              Button() {
-                Row() {
-                  Image(this.account.isAllMasked()
-                    ? $r('app.media.eye_open_primary_icon') : $r('app.media.eye_close_primary_icon'))
-                    .width(18)
-                }
+              Text(this.account.data.group?.name || DEFAULT_GROUP.name)
+                .backgroundColor($r('app.color.info'))
+                .borderRadius(20)
+                .height(24)
+                .padding({ left: 9, right: 9 })
+                .fontColor('white')
+                .fontSize(14)
+            }.width('100%')
+            .margin({ bottom: 3 })
 
-              }.backgroundColor(Color.Transparent)
-              .margin({ left: 5 })
-              .onClick(() => {
-                this.account.toggleAllMask()
-                logger.debug(TAG, 'tg mask')
-                this.account.forceUpdateBindingList()
-                // this.forceUpdateList()
-              })
+            .justifyContent(FlexAlign.Start)
 
-            }
-          }.margin({ bottom: 3 })
-          .width('100%')
-          .justifyContent(FlexAlign.SpaceBetween)
+            Text('创建于 ' + this.account.data.createTime)
+              .fontSize(12).fontColor($r('app.color.gray_7'))
+              .width('100%')
 
-          Row() {
-            Text(this.account.data.group?.name || DEFAULT_GROUP.name)
-              .backgroundColor($r('app.color.info'))
-              .borderRadius(20)
-              .height(24)
-              .padding({ left: 9, right: 9 })
-              .fontColor('white')
-              .fontSize(14)
-          }.width('100%')
-          .margin({ bottom: 3 })
+            Text('更新于 ' + this.account.data.updateTime)
+              .fontSize(12).fontColor($r('app.color.gray_7'))
+              .width('100%')
 
+          }
+          .margin({ bottom: 10 }).width('100%')
           .justifyContent(FlexAlign.Start)
 
-          Text('创建于 ' + this.account.data.createTime)
-            .fontSize(12).fontColor($r('app.color.gray_7'))
-            .width('100%')
+          this.SectionTitle('基本信息')
+          // .padding({ left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP })
 
-          Text('更新于 ' + this.account.data.updateTime)
-            .fontSize(12).fontColor($r('app.color.gray_7'))
-            .width('100%')
+          Column() {
+
+            this.DetailItem('account')
+            this.DetailItem('pwd')
+
+            ForEach(this.account.bindings, (binding: AccountBindingViewModel) => {
+              DescItem({ label: binding.typeLabel + '' }) {
+                DescText({ text: binding.getValue('bind') })
+                  .onClick(() => {
+                    binding.toggleMask('bind')
+                    this.account.forceUpdateBindingList()
+                  })
+                  .gesture(
+                    LongPressGesture({ repeat: false })
+                      .onAction((event: GestureEvent) => {
+
+                        if (event.repeat) return
+
+                        binding.copyBind()
+                      })
+                  )
+              }
+            })
+          }.SectionCard()
+
+          this.SectionTitle('其他信息')
+
+          Column() {
+            this.DetailItem('userName')
+            this.DetailItem('nickName')
+            this.DetailItem('note')
+          }
+          .SectionCard()
 
         }
-        .margin({ bottom: 10 }).width('100%')
-        .justifyContent(FlexAlign.Start)
+        .flexGrow(6)
+        .padding({
+          top: 15,
+          left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+          right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP
+        })
 
-        this.SectionTitle('基本信息')
-        // .padding({ left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP })
-
-        Column() {
-
-          this.DetailItem('account')
-          this.DetailItem('pwd')
-
-          ForEach(this.account.bindings, (binding: AccountBindingViewModel) => {
-            DescItem({ label: binding.typeLabel + '' }) {
-              DescText({ text: binding.getValue('bind') })
-                .onClick(() => {
-                  binding.toggleMask('bind')
-                  this.account.forceUpdateBindingList()
-                })
-                .gesture(
-                  LongPressGesture({ repeat: false })
-                    .onAction((event: GestureEvent) => {
-
-                      if (event.repeat) return
-
-                      binding.copyBind()
-                    })
-                )
+        // fixed bottom bar
+        Row() {
+          Button() {
+            Row() {
+              Image(this.account.isAllMasked()
+                ? $r('app.media.eye_open_primary_icon') : $r('app.media.eye_close_primary_icon'))
+                .width(18).margin({ right: 2 })
+              Text(this.account.isAllMasked() ? '显示' : '隐藏').fontColor($r('app.color.primary'))
             }
+
+          }.backgroundColor(Color.Transparent)
+          .margin({ left: 5 })
+          .onClick(() => {
+            this.account.toggleAllMask()
+            logger.debug(TAG, 'tg mask')
+            this.account.forceUpdateBindingList()
+            // this.forceUpdateList()
           })
-        }.SectionCard()
 
-        this.SectionTitle('其他信息')
+          Button({ type: ButtonType.Normal }) {
+            Row() {
+              Image($r('app.media.delete_red_icon')).width(16).margin({ right: 2 })
+              Text('删除').fontColor($r('app.color.error'))
+            }
+          }
+          .onClick(() => {
+            this.del()
+          })
+          .backgroundColor(Color.Transparent)
 
-        Column() {
-          this.DetailItem('userName')
-          this.DetailItem('nickName')
-          this.DetailItem('note')
+          .padding(10)
+
+
+          Button({ type: ButtonType.Normal }) {
+            Row() {
+              Image($r('app.media.edit_primary_icon')).width(16).margin({ right: 2 })
+              Text('编辑')
+                .fontColor($r('app.color.primary'))
+            }
+          }
+          .onClick(() => {
+            this.edit()
+          })
+          .backgroundColor(Color.Transparent)
+          .padding(10)
+
+          Button({ type: ButtonType.Normal }) {
+            Row() {
+              Image($r('app.media.copy_primary')).width(16).margin({ right: 2 })
+              Text('复制')
+                .fontColor($r('app.color.primary'))
+            }
+          }
+          .bindMenu(this.CopyMenuBuilder)
+          .backgroundColor(Color.Transparent)
+          .padding(10)
+
         }
-        .SectionCard()
+        .height(50)
+        .width('100%')
+        .backgroundColor(Color.White)
+        .justifyContent(FlexAlign.SpaceAround)
+        .borderRadius({
+          topLeft: 5,
+          topRight: 5
+        })
       }
-      .padding({
-        top: 15,
-        left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-        right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP
-      })
-      // .backgroundColor('red')
+
       .flexGrow(5)
     }
     .height('100%')

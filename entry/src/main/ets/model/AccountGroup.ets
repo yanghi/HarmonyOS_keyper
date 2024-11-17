@@ -1,4 +1,4 @@
-import { CommonConstants } from '../common/constants/CommonConstants'
+import { CommonConstants, DEFAULT_GROUP } from '../common/constants/CommonConstants'
 import { AccountInterface } from '../common/interfaces/Account'
 import { AccountGroup } from '../common/interfaces/AccountGroup'
 import { AppRelationalStoreManager } from '../common/stores/relationalStore'
@@ -12,12 +12,16 @@ const TAG = '[AccountGroupListModel]'
 @Observed
 export class AccountGroupListModelCls {
   list: AccountGroup[] = []
-  selectOptions: (SelectOption & { id: number })[] = []
+  selectOptions: (SelectOption & {
+    id: number,
+    group: AccountGroup
+  })[] = []
 
   private updateList() {
-    this.selectOptions = this.list.map(it => ({
+    this.selectOptions = [DEFAULT_GROUP].concat(this.list).map(it => ({
       value: it.name,
-      id: it.id
+      id: it.id,
+      group: it
     }))
   }
 

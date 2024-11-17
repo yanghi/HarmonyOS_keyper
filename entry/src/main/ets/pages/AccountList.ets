@@ -119,8 +119,20 @@ export struct AccountList {
           }.height('100%')
         }
         List({ space: 10 }) {
-          ForEach(this.groupedViewModelList, (group) => {
+          ForEach(this.groupedViewModelList, (group: GroupedViewModelList) => {
             ListItemGroup({ header: this.buildGroupHeader(group), space: 10 }) {
+              if (!group.list.length) {
+                ListItem() {
+                  Row() {
+                    Text('无数据').fontColor($r('app.color.gray_7'))
+                  }
+                  .padding({
+                    left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP
+                  })
+                  .height(60)
+                  .width('100%')
+                }
+              }
               ForEach(group.list, (item: AccountViewModel, idx) => {
                 ListItem() {
                   Column() {
@@ -171,6 +183,13 @@ export struct AccountList {
                             item.toggleMask('pwd')
                             this.forceUpdateList()
                           })
+                            // 单指长按文本触发该手势事件
+                          .gesture(
+                            LongPressGesture({ repeat: false })
+                              .onAction((event: GestureEvent) => {
+                                item.copyProp('pwd')
+                              })
+                          )
                       }
 
                       if (item.data.note) {
@@ -206,7 +225,13 @@ export struct AccountList {
 
                   }.padding({ left: 10 })
                   .onClick(() => {
-                    Logger.debug(TAG, 'click list col')
+                    Logger.debug(TAG, 'click list col 33')
+                    router.pushUrl({
+                      url: 'pages/AccountDetail',
+                      params: {
+                        id: item.data.id
+                      }
+                    })
                   })
                 }
                 .width('100%')
@@ -260,7 +285,6 @@ export struct AccountList {
           Text('编辑')
             .fontColor($r('app.color.primary'))
         }
-
       }
       .onClick(() => {
         this.edit(data)
@@ -273,7 +297,7 @@ export struct AccountList {
 
   @Builder buildGroupHeader(group: any) {
     Row() {
-      Text(group.group.name).fontColor($r('app.color.gray_7')).fontWeight(FontWeight.Medium)
+      Text(group.group.name).fontColor('#333333').fontWeight(FontWeight.Medium)
     }.padding({ left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP })
     .margin({ bottom: 8 })
   }

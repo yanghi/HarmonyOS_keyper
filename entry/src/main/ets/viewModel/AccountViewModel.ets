@@ -40,6 +40,12 @@ export class AccountViewModel extends MaskObject<AccountInterface, Array<Account
     })
   }
 
+  copyableKeys() {
+    let allKeys: (keyof AccountInterface)[] = ['account', 'pwd', 'note', 'userName', 'nickName']
+
+    return allKeys.filter(key => typeof this.data[key] === 'string' && this.data[key])
+  }
+
   keyLabel(key: keyof AccountInterface) {
 
     let label = ''
@@ -68,7 +74,6 @@ export class AccountViewModel extends MaskObject<AccountInterface, Array<Account
     let val = this.data[key] as string
 
     let label = this.keyLabel(key)
-
 
     let pasteboardData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, val)
 
