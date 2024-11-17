@@ -1,4 +1,5 @@
 import router from '@ohos.router'
+import { CommonConstants } from '../common/constants/CommonConstants'
 
 @Component
 export struct TopNavBar {
@@ -37,9 +38,14 @@ export struct TopNavBar {
       }
     }
     .width('100%')
-    .padding(10)
+    .padding({
+      left: 10,
+      right: 10,
+      bottom: 10,
+      top: CommonConstants.SYS_NAV_HEIGHT
+    })
     .backgroundColor($r('app.color.primary'))
     .justifyContent(FlexAlign.SpaceBetween)
-    .height(50)
+    .height(50 + CommonConstants.SYS_NAV_HEIGHT)
   }
 }
