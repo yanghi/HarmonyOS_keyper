@@ -8,7 +8,7 @@ import {
 import Logger from '../common/utils/Logger'
 import { AccountListModel } from './Account'
 import cryptoFramework from '@ohos.security.cryptoFramework'
-import { cipherModel } from './Cipher'
+import { CipherModel, cipherModel } from './Cipher'
 import { AccountInterface } from '../common/interfaces/Account'
 import { AccountBindingListModel } from './AccountBinding'
 import { AccountBindingContactListModel } from './AccountBindingContact'
@@ -19,6 +19,7 @@ import { ConverterModel } from './ConverterModel'
 import { mockAccountList } from '../common/utils/MockData'
 import { AccountGroup } from '../common/interfaces/AccountGroup'
 import { AccountGroupListModel } from './AccountGroup'
+import { DEFAULT_GROUP } from '../common/constants/CommonConstants'
 
 const TAG = '[DataManager]'
 const EXPORT_TXT_FILE_NAME = "keyper.txt"
@@ -79,109 +80,8 @@ class DataManager {
     }
   }
 
-  async importFromJson() {
-    try {
-      let buf = await fsUtils.readDoc()
-      let fileStr = ab2str(buf)
-      Logger.debug(TAG, 'read file data ' + fileStr)
-
-      let res = await new PortCryptModel().input(fileStr)
-
-      let data = res.body.data
-
-
-      let importRes = await this.importDataToDb(data)
-      Logger.info(TAG, 'importFromJson result ' + JSON.stringify(importRes))
-      Logger.info(TAG, 'importFromJson result Data' + JSON.stringify(data))
-      await AccountListModel.queryAll()
-      return importRes
-    } catch (e) {
-
-      Logger.error(TAG, 'importFromJson failed,' + stringifyError(e))
-      throw e
-
-    }
-  }
-
-  private async importDataToDb(data: PortJson['body']['data']): Promise<ImportResult> {
-    let result: ImportResult = {
-      total: {
-        account: data.accounts.length,
-        binding: data.bindings.length,
-        contact: data.bindings.length,
-        group: data.groups.length,
-      },
-      succeed: {
-        account: 0,
-        binding: 0,
-        contact: 0,
-        group: 0
-      }
-    }
-    let sub = 'importDataToDb() '
-
-    try {
-      // old map new
-      const newAccountIdMap = new Map<number, number>()
-      const newBindingIdMap = new Map<number, number>()
-      const newGroupIdMap = new Map<number, number>()
-
-      let groupPromises = data.groups.map(gp => {
-        return AccountGroupListModel.add(gp).then(added => {
-          newGroupIdMap.set(gp.id, added.id)
-        })
-      })
-      let groupRes = await Promise.allSettled(groupPromises)
-      result.succeed.group = groupRes.filter(br => br.status === 'fulfilled').length
-
-      let bindingPromises = data.bindings.map(bd => {
-
-        return AccountBindingListModel.add(bd).then(added => {
-          newBindingIdMap.set(bd.id, added.id)
-        })
-      })
-      let bindingRes = await Promise.allSettled(bindingPromises)
-
-      result.succeed.binding = bindingRes.filter(br => br.status === 'fulfilled').length
-
-      let accountPromises = data.accounts.map(ac => {
-        let groupId = newGroupIdMap.get(ac.groupId)
-        if (!groupId) {
-          Logger.error(
-            TAG,
-            sub
-            + 'account cannot contact correct groupId,reset to 0, origin account id='
-            + ac.id + ' groupId=' + ac.groupId
-          )
-        }
-        return AccountListModel.add(ac).then((added) => {
-          newAccountIdMap.set(ac.id, added.id)
-        })
-      })
-
-      let accountRes = await Promise.allSettled(accountPromises)
-      result.succeed.account = accountRes.filter(br => br.status === 'fulfilled').length
-
-      let contactPromises = data.contacts.map(ct => {
-        let accountId = newAccountIdMap.get(ct.accountId)
-
-        if (!accountId) return Promise.reject(`cannot import account contact,caue imported account id=${accountId}  fail`)
-        let bindingId = newBindingIdMap.get(ct.bindingId)
-        if (!accountId) return Promise.reject(`cannot import account contact,caue imported binding id=${bindingId}  fail`)
-
-        ct.accountId = accountId
-        ct.bindingId = bindingId
-        return AccountBindingContactListModel.add(ct)
-      })
-
-      let contactRes = await Promise.allSettled(contactPromises)
-      result.succeed.account = contactRes.filter(br => br.status === 'fulfilled').length
-
-    } catch (e) {
-      Logger.error(TAG, 'importDataToDb failed,' + stringifyError(e))
-    }
-
-    return result
+  createJsonImporter() {
+    return new JsonImporter()
   }
 
   async testPort() {
@@ -190,10 +90,11 @@ class DataManager {
       Logger.debug(TAG, sub + 'output')
       let res = await new PortCryptModel().output(mockAccountList())
       Logger.debug(TAG, sub + 'input')
-      let data = await new PortCryptModel().input(res)
-      // Logger.debug(TAG, sub+ 'input')
-      Logger.debug(TAG, sub + 'import to DB')
-      let ires = await this.importDataToDb(data.body.data)
+
+      let importer = this.createJsonImporter()
+      importer.setDocContent(res)
+      await  importer.validateAndCheckToken()
+      let ires = await importer.doFinal()
 
       Logger.debug(TAG, sub + 'success,' + JSON.stringify(ires))
     } catch (e) {
@@ -221,10 +122,17 @@ interface RawPortJson {
   body: string
   sign: string
   key: string
+  token?: string
+}
+
+interface TokenData {
+  token: string
+  secret: string
 }
 
 interface PortJson {
   version: number
+  token?: TokenData
   body: {
     data: {
       accounts: AccountInterface[]
@@ -237,30 +145,59 @@ interface PortJson {
 }
 
 const CRYPTO_SALT = 'KuRsS5KYQ9KfDB5X'
+const IMPORT_TOKEN = 'cOdY8jjZkH7ckH4G'
 
 function mixSalt(s: string) {
   return s + CRYPTO_SALT
 }
 
-class PortCryptModel {
-  private tag = '[PortConvertModel]'
+export class PortCryptModel {
+  static tag = '[PortConvertModel]'
+  private tag = PortCryptModel.tag
+
+  constructor(private  cipher: CipherModel = cipherModel) {
+  }
 
   private shimJson(json: PortJson) {
     if (!json.body.data.groups) {
       json.body.data.groups = []
     }
   }
+  // 返回token校验结果,表明是否和当前密码一致
+  async checkToken(token: string | undefined): Promise<boolean> {
+    if (!token) return true
 
-  async input(raw: string): Promise<PortJson> {
+    return await PortCryptModel.checkTokenWithCipher(token, cipherModel)
+  }
+
+  static async checkTokenWithCipher(token: string, cipher: CipherModel) {
+    if (!token) return true
+    try {
+      let decryptToken = await cipher.aesDecrypt(token)
+
+      return decryptToken === IMPORT_TOKEN
+    } catch (e) {
+      Logger.error(this.tag, 'checkTokenWithCipher() failed' + stringifyError(e))
+    }
+
+    return false
+  }
+
+  async validateInput(raw: string): Promise<RawPortJson> {
     let sub = 'PortCryptModel.input() '
-    Logger.info(this.tag, 'input ')
+    let json: RawPortJson = JSON.parse(raw)
+    Logger.info(this.tag, sub + 'validateRawPortJson')
+
+    this.validateRawPortJsonSimple(json)
+    return json
+  }
+
+  async decryptJson(json: RawPortJson): Promise<PortJson> {
+    let sub = 'PortCryptModel.decryptJson() '
+    Logger.info(this.tag, sub)
     // let raw = ''
     try {
-      let json: RawPortJson = JSON.parse(raw)
-      Logger.info(this.tag, sub + 'validateRawPortJson')
-
-      await this.validateRawPortJson(raw, json)
-
+      await this.validateRawPortJsonSign(json)
       let body = json.body
       let md5 = await cryptoFramework.createMd('MD5')
       await md5.update({
@@ -273,12 +210,12 @@ class PortCryptModel {
       //  first decrypt
       Logger.info(this.tag, sub + 'first decrypt')
       Logger.debug(this.tag, sub + 'body ' + body.slice(0, 30))
-      body = await cipherModel.aesDecrypt(body, { key: realKey })
+      body = await this.cipher.aesDecrypt(body, { key: realKey })
 
       // second decrypt
       Logger.info(this.tag, sub + 'second decrypt')
 
-      body = await cipherModel.aesDecrypt(body)
+      body = await this.cipher.aesDecrypt(body)
       Logger.debug(this.tag, sub + 'body ' + body.slice(0, 30))
 
       let bodyData = JSON.parse(body)
@@ -298,6 +235,14 @@ class PortCryptModel {
     }
   }
 
+  private validateRawPortJsonSimple(json: RawPortJson) {
+    let valid = typeof json.version == 'number' && typeof json.body === 'string' && typeof json.sign == 'string'
+
+    if (!valid) {
+      throw 'invalid RawPortJson'
+    }
+  }
+
   private async validateRawPortJson(raw: string, json: RawPortJson) {
     let valid = typeof json.version == 'number' && typeof json.body === 'string' && typeof json.sign == 'string'
 
@@ -313,17 +258,26 @@ class PortCryptModel {
     Logger.info(this.tag, 'validate sign ok')
   }
 
+  private async validateRawPortJsonSign(json: RawPortJson) {
+    let sign = await this.signRawJson(json)
+    if (sign !== json.sign) {
+      Logger.debug(this.tag, 'json sign' + json.sign + ' conrrct ' + sign)
+      throw 'The file has been tampered'
+    }
+    Logger.info(this.tag, 'validate sign ok')
+  }
+
   private async signRawJson(json: RawPortJson) {
     let md5 = cryptoFramework.createMd('MD5')
     md5.update({ data: stringToUint8Array(this.rawJsonSignContent(json)) })
     let jsonMd5 = await md5.digest()
 
-    let sign = await cipherModel.aesEncrypt(jsonMd5)
+    let sign = await this.cipher.aesEncrypt(jsonMd5)
     return sign
   }
 
   private rawJsonSignContent(json: RawPortJson) {
-    return json.version + json.key + json.body
+    return json.version + json.key + json.body + (json.token || '')
   }
 
   async output(sources: AccountInterface[]) {
@@ -369,12 +323,15 @@ class PortCryptModel {
     body = await cipherModel.aesEncrypt(body, { key: realKey })
     Logger.debug(this.tag, sub + 'body ' + uint8ArrayToShowStr(body.slice(0, 32)))
 
+    Logger.info(this.tag, sub + 'gen token')
+    let token = await cipherModel.aesEncrypt(IMPORT_TOKEN)
 
     let rawJson: RawPortJson = {
-      version: 1,
+      version: 2,
       sign: '',
       key,
-      body
+      body,
+      token
     }
 
 
@@ -382,6 +339,136 @@ class PortCryptModel {
     rawJson.sign = sign
 
     return JSON.stringify(rawJson)
+  }
+}
+
+class JsonImporter {
+  private portCrypt: PortCryptModel
+  private tag = '[JsonImporter]'
+  private fileContent: ArrayBuffer | string
+  private rawJson: RawPortJson
+  private checkTokenResult: boolean
+
+  constructor() {
+    this.portCrypt = new PortCryptModel()
+
+  }
+
+  async readDoc() {
+    let buf = await fsUtils.readDoc()
+    this.fileContent = buf
+  }
+
+  getRawJson() {
+    return this.rawJson
+  }
+
+  async setDocContent(content: ArrayBuffer | string) {
+    this.fileContent = content
+  }
+
+  async validateAndCheckToken(): Promise<boolean> {
+    let fileStr = typeof this.fileContent == 'string' ? this.fileContent : ab2str(this.fileContent)
+    this.rawJson = await this.portCrypt.validateInput(fileStr)
+
+    let checkTokenResult = this.checkTokenResult = await this.portCrypt.checkToken(this.rawJson.token)
+    return checkTokenResult
+  }
+  // decrypt and import data to DB
+  async doFinal(cipher?: CipherModel): Promise<ImportResult> {
+    if (!this.checkTokenResult) {
+      if (!cipher) {
+        let msg = 'miss cipher params when checkTokenResult is false'
+        Logger.error(this.tag, msg)
+        throw { code: 401, msg }
+      }
+      this.portCrypt = new PortCryptModel(cipher)
+    }
+    let decryptedJson = await this.portCrypt.decryptJson(this.rawJson)
+
+    return await this.importDataToDb(decryptedJson.body.data)
+  }
+
+  private async importDataToDb(data: PortJson['body']['data']): Promise<ImportResult> {
+    let result: ImportResult = {
+      total: {
+        account: data.accounts.length,
+        binding: data.bindings.length,
+        contact: data.bindings.length,
+        group: data.groups.length,
+      },
+      succeed: {
+        account: 0,
+        binding: 0,
+        contact: 0,
+        group: 0
+      }
+    }
+    let sub = 'importDataToDb() '
+
+    try {
+      // old map new
+      const newAccountIdMap = new Map<number, number>()
+      const newBindingIdMap = new Map<number, number>()
+      const newGroupIdMap = new Map<number, number>()
+
+      let groupPromises = data.groups.map(gp => {
+        return AccountGroupListModel.add(gp).then(added => {
+          newGroupIdMap.set(gp.id, added.id)
+        })
+      })
+      let groupRes = await Promise.allSettled(groupPromises)
+      result.succeed.group = groupRes.filter(br => br.status === 'fulfilled').length
+
+      let bindingPromises = data.bindings.map(bd => {
+
+        return AccountBindingListModel.add(bd).then(added => {
+          newBindingIdMap.set(bd.id, added.id)
+        })
+      })
+      let bindingRes = await Promise.allSettled(bindingPromises)
+
+      result.succeed.binding = bindingRes.filter(br => br.status === 'fulfilled').length
+
+      let accountPromises = data.accounts.map(ac => {
+        let groupId = newGroupIdMap.get(ac.groupId)
+        if (!groupId && ac.groupId != DEFAULT_GROUP.id) {
+          Logger.error(
+            TAG,
+            sub
+            + 'account cannot contact correct groupId,reset to 0, origin account id='
+            + ac.id + ' groupId=' + ac.groupId
+          )
+        }
+        return AccountListModel.add(ac).then((added) => {
+          newAccountIdMap.set(ac.id, added.id)
+        })
+      })
+
+      let accountRes = await Promise.allSettled(accountPromises)
+      result.succeed.account = accountRes.filter(br => br.status === 'fulfilled').length
+
+      let contactPromises = data.contacts.map(ct => {
+        let accountId = newAccountIdMap.get(ct.accountId)
+
+        if (!accountId) return Promise.reject(`cannot import account contact,caue imported account id=${accountId}  fail`)
+        let bindingId = newBindingIdMap.get(ct.bindingId)
+        if (!accountId) return Promise.reject(`cannot import account contact,caue imported binding id=${bindingId}  fail`)
+
+        ct.accountId = accountId
+        ct.bindingId = bindingId
+        return AccountBindingContactListModel.add(ct)
+      })
+
+      let contactRes = await Promise.allSettled(contactPromises)
+      result.succeed.account = contactRes.filter(br => br.status === 'fulfilled').length
+
+      Logger.debug(TAG, 'importDataToDb ok')
+    } catch (e) {
+      Logger.error(TAG, 'importDataToDb failed,' + stringifyError(e))
+    }
+
+    return result
   }
 }
 

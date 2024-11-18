@@ -6,6 +6,8 @@ import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
 import { CommonConstants } from '../common/constants/CommonConstants'
 import { dataManager } from '../model/DataManager'
+import { CipherModel } from '../model/Cipher'
+import { CustomPwdValidateType } from '../common/enums/app'
 
 @Styles function listItemCard() {
   .backgroundColor(0xffffff)
@@ -79,8 +81,46 @@ export struct Settings {
   }
 
   importFromJson() {
-    dataManager.importFromJson()
+    let importer = dataManager.createJsonImporter()
+
+    importer.readDoc()
       .then(() => {
+        return importer.validateAndCheckToken()
+      })
+      .then((tokenCheckRes) => {
+        if (tokenCheckRes) {
+          return Promise.resolve()
+        }
+        //   jump to lock page to validate pwd
+        Logger.debug(TAG, 'importjson token' + importer.getRawJson().token)
+        return new Promise<string | void>((resolve, reject) => {
+          requestPasswordVerify({
+            id: 'settings.importFromJson',
+            title: '导入数据密码与当前密码不一致,请输入原密码后导入',
+            customPwdValidateType: CustomPwdValidateType.ImportTokenValidate,
+            token: importer.getRawJson().token
+          }
+            , null, (data) => {
+              Logger.debug(TAG, 'checked password after importer.validateAndCheckToken() ' + data.inputSecret)
+              resolve(data.inputSecret)
+            })
+        })
+      })
+      .then((secret) => {
+        let cipher: CipherModel
+        if (secret) {
+          cipher = new CipherModel()
+          cipher.setAESKeyBlob(secret)
+        }
+
+        return importer.doFinal(cipher)
+      })
+      .then(() => {
+        AccountListModel.queryAll().then(() => {
+          Logger.debug(TAG, 'queryAll ok after import')
+        }).catch(() => {
+
+        })
         promptAction.showToast({
           message: '导入成功'
         })
@@ -89,6 +129,7 @@ export struct Settings {
         promptAction.showToast({
           message: '导入失败'
         })
+        Logger.error(TAG, 'importFromJson failed')
       })
   }
 

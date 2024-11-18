@@ -1,7 +1,7 @@
 import router from '@ohos.router'
-import { AppLockType } from '../common/enums/app'
+import { AppLockType, CustomPwdValidateType } from '../common/enums/app'
 import { AppRelationalStoreManager } from '../common/stores/relationalStore'
-import { cipherModel } from '../model/Cipher'
+import { CipherModel, cipherModel } from '../model/Cipher'
 import { AppLock } from '../model/Lock'
 import promptAction from '@ohos.promptAction'
 import Logger from '../common/utils/Logger'
@@ -10,8 +10,20 @@ import { EventId } from '../common/enums/Event'
 import { TopNavBar } from '../components/TopNavBar'
 import { PasswordStrengthIndicator } from '../components/PasswordStrengthIndicator'
 import { CheckPasswordStrengthResult, PasswordStrength } from '../common/utils/CheckPasswordStrength'
+import { PortCryptModel } from '../model/DataManager'
+import { stringifyError } from '../common/utils/common'
 
 const TAG = '[LockEntry]'
+
+export interface VerifyParams {
+  id: string
+  reasonTitle?: string
+  title?: string
+  subTitle?: string
+  callbackPayload?: any
+  token?: string
+  customPwdValidateType?: CustomPwdValidateType
+}
 
 @Entry
 @Component
@@ -22,7 +34,7 @@ struct LockEntry {
   prevPwd: string = ''
   resetPwdInputFlag = false
   @State confirmPwdPhase: boolean = false
-  private verifyParams: any | null = null
+  private verifyParams: VerifyParams | null = null
   passwordStrengthResult: CheckPasswordStrengthResult | null = null
 
   checkIsVerifyMode() {
@@ -91,8 +103,28 @@ struct LockEntry {
   }
 
   verify() {
-    AppLock.isCorrectPwd(this.pwd).then(isCorrect => {
-      if (!isCorrect) {
+    let customPwdValidate
+    Logger.debug(TAG, 'verify , params:' + JSON.stringify(this.verifyParams))
+    if (this.verifyParams.customPwdValidateType === CustomPwdValidateType.ImportTokenValidate) {
+      customPwdValidate = (inputSecret: string) => {
+
+        if (!this.verifyParams.token) {
+          throw { code: 401, msg: 'miss verify token' }
+        }
+        let cipher = new CipherModel()
+        cipher.setAESKeyBlob(inputSecret)
+        Logger.debug(TAG, 'customPwdValidate.ImportTokenValidate()')
+
+        return PortCryptModel.checkTokenWithCipher(this.verifyParams.token, cipher)
+      }
+    }
+
+    if (customPwdValidate) {
+      Logger.debug(TAG, 'use customPwdValidate type=' + this.verifyParams?.customPwdValidateType)
+    }
+
+    AppLock.isCorrectPwd(this.pwd, customPwdValidate).then(result => {
+      if (!result.correct) {
         this.pwdErrTip = '密码错误'
         return
       }
@@ -100,11 +132,23 @@ struct LockEntry {
       if (this.verifyParams) {
         AppLock.unlock()
         router.back()
-        emitter.emit({ eventId: EventId.VerifySuccess }, { data: this.verifyParams?.callbackPayload })
+        emitter.emit(
+          { eventId: EventId.VerifySuccess },
+          {
+            data:
+            {
+              payload: this.verifyParams?.callbackPayload,
+              inputSecret: result.inputSecret,
+              id: this.verifyParams.id
+            }
+          }
+        )
         this.verifyParams = null
       } else {
         this.unlock()
       }
+    }).catch(e => {
+      Logger.error(TAG, 'isCorrectPwd e ' + stringifyError(e))
     })
   }
 
@@ -155,8 +199,8 @@ struct LockEntry {
       return
     }
 
-    AppLock.isCorrectPwd(this.pwd).then(isCorrect => {
-      if (isCorrect) {
+    AppLock.isCorrectPwd(this.pwd).then(result => {
+      if (result.correct) {
         this.unlock()
       } else {
         this.pwdErrTip = '密码错误'
@@ -207,8 +251,13 @@ struct LockEntry {
           .justifyContent(FlexAlign.Center)
           // subtitle
           Row() {
-            if (this.lockType == AppLockType.Verify && this.verifyParams?.reasonTitle) {
-              Text('您想要进行"' + this.verifyParams.reasonTitle + '"操作,输入密码确认').fontSize(18)
+            if (this.lockType == AppLockType.Verify && this.verifyParams) {
+              if (this.verifyParams.reasonTitle) {
+                Text('您想要进行"' + this.verifyParams.reasonTitle + '"操作,输入密码确认').fontSize(18)
+              }
+              if (this.verifyParams.subTitle) {
+                Text(this.verifyParams.subTitle).fontSize(18)
+              }
             }
           }.margin({ top: 10, bottom: 30 })
 

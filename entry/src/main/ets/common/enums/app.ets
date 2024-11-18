@@ -4,3 +4,7 @@ export enum AppLockType {
   Create,
   Verify
 }
+
+export enum CustomPwdValidateType {
+  ImportTokenValidate
+}

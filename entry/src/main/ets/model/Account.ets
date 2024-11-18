@@ -32,6 +32,12 @@ export class AccountModel {
       userName: ''
     }
   }
+
+  static shim(acc: AccountInterface) {
+    if (!acc.bindings) {
+      acc.bindings = []
+    }
+  }
 }
 
 
@@ -111,6 +117,7 @@ export class AccountListModelCls {
 
   async add(ac: AccountInterface) {
     try {
+      AccountModel.shim(ac)
       Logger.info(LOG_TAG, "add account ")
       let addValues = {
         ...ac,
@@ -152,7 +159,7 @@ export class AccountListModelCls {
 
       return newAdd
     } catch (e) {
-      Logger.error(LOG_TAG, "add account failed, err:" + JSON.stringify(e))
+      Logger.error(LOG_TAG, "add account failed, err:" + stringifyError(e))
       throw e
     }
   }
