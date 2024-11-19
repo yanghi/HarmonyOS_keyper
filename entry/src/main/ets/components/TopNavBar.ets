@@ -6,6 +6,7 @@ export struct TopNavBar {
   @Prop title: string
   private back: boolean = false
   @BuilderParam child: () => {}
+  @StorageProp('avoidTopHeight') avoidTopHeight: number = 0
 
   build() {
     Row() {
@@ -42,10 +43,10 @@ export struct TopNavBar {
       left: 10,
       right: 10,
       bottom: 10,
-      top: CommonConstants.SYS_NAV_HEIGHT
+      top: this.avoidTopHeight
     })
     .backgroundColor($r('app.color.primary'))
     .justifyContent(FlexAlign.SpaceBetween)
-    .height(50 + CommonConstants.SYS_NAV_HEIGHT)
+    .height(40 + this.avoidTopHeight)
   }
 }

@@ -22,11 +22,15 @@
     },
     {
       "name": "error",
-      "value": "#f56c6c"
+      "value": "#d81e06"
     },
     {
       "name": "info",
       "value": "#909399"
+    },
+    {
+      "name": "warn",
+      "value": "#e6a23c"
     }
   ]
 }

@@ -88,7 +88,9 @@ export namespace CommonConstants {
 
   export const PAGE_CONTENT_HORIZONTAL_GAP = 10
 
-  export const SYS_NAV_HEIGHT: number = AppStorage.Get('navHeight') || 30
+  export const SYS_AVOID_AREA_TOP_HEIGHT: number = AppStorage.Get('navHeight') || 0
+
+  export const SYS_AVOID_AREA_BOTTOM_HEIGHT: number = AppStorage.Get('bottomAvoidHeight') || 0
 }
 
 export const DEFAULT_GROUP: AccountGroup = {

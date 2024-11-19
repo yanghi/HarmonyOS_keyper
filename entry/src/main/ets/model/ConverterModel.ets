@@ -1,24 +1,8 @@
 import { CommonConstants } from '../common/constants/CommonConstants';
 import { AccountInterface } from '../common/interfaces/Account';
-import { AccountBinding, AccountBindingContact } from '../common/interfaces/AccountBinding';
-import Logger from '../common/utils/Logger'
-import picker from '@ohos.file.picker';
-import fs from '@ohos.file.fs';
-import {
-  ab2str,
-  dateTimeToDefaultString,
-  stringifyError,
-  stringToUint8Array,
-  uint8ArrayToShowStr,
-  uint8ArrayToString
-} from '../common/utils/common';
-import { cipherModel } from './Cipher';
-import cryptoFramework from '@ohos.security.cryptoFramework';
-import { AccountBindingListModel } from './AccountBinding';
-import { AccountListModel } from './Account';
-import { AccountBindingContactListModel } from './AccountBindingContact';
-import { AppLock } from './Lock';
-import { mockAccountList } from '../common/utils/MockData';
+import { AccountBinding } from '../common/interfaces/AccountBinding';
+import { dateTimeToDefaultString, } from '../common/utils/common';
+import { AccountModel } from './Account';
 
 const TAG = '[Converter]'
 
@@ -50,7 +34,16 @@ class Converter {
 
   private bindingToStr(binding: AccountBinding) {
     let typeStr = CommonConstants.AccountBindingTypeMapLabel.get(binding.type)
-    return this.fieldToStr('绑定' + typeStr, binding.bind)
+    return this.fieldToStr('关联' + typeStr, binding.bind)
+  }
+
+  propsToString(account: AccountInterface, props: Array<keyof AccountInterface>) {
+    let str = ''
+    props.forEach(key => {
+      str += this.fieldToStr(AccountModel.keyToLabel(key), account[key as any])
+    })
+
+    return str
   }
 }
 

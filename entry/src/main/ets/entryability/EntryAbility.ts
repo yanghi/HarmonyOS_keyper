@@ -2,15 +2,19 @@ import UIAbility from '@ohos.app.ability.UIAbility';
 import hilog from '@ohos.hilog';
 import window from '@ohos.window';
 import emitter from '@ohos.events.emitter';
+import deviceInfo from '@ohos.deviceInfo';
 
 const PREFIX = 'KeyperEntryAbility'
 
 export default class EntryAbility extends UIAbility {
+  isEmulator = true
+
   onCreate(want, launchParam) {
+    this.echoInfo()
     hilog.info(0x0000, PREFIX, '%{public}s', 'Ability onCreate');
     window.getLastWindow(this.context).then((win) => {
       win.setWindowPrivacyMode(true).then(() => {
-        hilog.info(0x0000, 'Keyper', '%{public}s', 'setWindowPrivacyMode=true succeed');
+        hilog.info(0x0000, PREFIX, '%{public}s', 'setWindowPrivacyMode=true succeed');
       })
     })
   }
@@ -19,11 +23,23 @@ export default class EntryAbility extends UIAbility {
     hilog.info(0x0000, PREFIX, '%{public}s', 'Ability onDestroy');
   }
 
+  echoInfo() {
+    let info = '';
+
+    ['osFullName', 'marketName', 'brand', 'deviceType', 'productSeries', 'versionId'].forEach(key => {
+      info += `\n    ${key}=${deviceInfo[key]}`
+    })
+    // deviceInfo.osFullName
+    hilog.info(0x0000, PREFIX, '%{public}s', 'deviceInfo: \n' + info);
+
+  }
+
   onWindowStageCreate(windowStage: window.WindowStage) {
     // Main window is created, set main page for this ability
     hilog.info(0x0000, PREFIX, '%{public}s', 'Ability onWindowStageCreate');
     let windowClass: window.Window = null;
-
+    let avoidTopHeight = 0
+    let bottomAvoidHeight = 0
 
     const loadContent = () => {
       windowStage.loadContent('pages/Lock', (err, data) => {
@@ -33,15 +49,16 @@ export default class EntryAbility extends UIAbility {
           return;
         }
 
-        let navHeightVp = px2vp(navBarHe)
-        AppStorage.SetOrCreate('navHeight', navHeightVp)
-        hilog.info(0x0000, PREFIX, '%{public}s', 'avoidArea navHeight vp' + navHeightVp);
+        let navHeightVp = px2vp(avoidTopHeight)
+        let bottomAvoidHeightVp = px2vp(bottomAvoidHeight)
+        AppStorage.SetOrCreate('avoidTopHeight', navHeightVp)
+        AppStorage.SetOrCreate('avoidBottomHeight', bottomAvoidHeightVp)
+        hilog.info(0x0000, PREFIX, 'avoidArea(vp) top: %{public}s bottom %{public}s', '' + navHeightVp, '' + bottomAvoidHeightVp);
 
         hilog.info(0x0000, PREFIX, 'Succeeded in loading the content. Data: %{public}s', JSON.stringify(data) ?? '');
       });
     }
 
-    let navBarHe = 100
     windowStage.getMainWindow((err, data) => {
 
       if (err.code) {
@@ -53,34 +70,44 @@ export default class EntryAbility extends UIAbility {
       windowClass = data;
       console.info('Succeeded in obtaining the main window. Data: ' + JSON.stringify(data));
 
-      let avoidArea = data.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
-      navBarHe = avoidArea.topRect.height
-      hilog.info(0x0000, PREFIX, '%{public}s', 'avoidArea nav H' + avoidArea.topRect.height);
+      windowClass.on('avoidAreaChange', (data) => {
+        if (data.type === window.AvoidAreaType.TYPE_SYSTEM) {
+          let navHeightVp = px2vp(data.area.topRect.height)
+          let bottomAvoidHeightVp = px2vp(data.area.bottomRect.height)
+          hilog.info(0x0000, PREFIX, `sys avoidAreaChange new area(vp): top ${navHeightVp} bottom ${bottomAvoidHeightVp}`);
 
-      windowClass.setWindowSystemBarEnable(['status', 'navigation'], (err) => {
+          AppStorage.SetOrCreate('avoidTopHeight', navHeightVp)
+          AppStorage.SetOrCreate('avoidBottomHeight', bottomAvoidHeightVp)
+        }
+      })
+
+      windowClass.setWindowLayoutFullScreen(true)
+        .then(() => {
+          let avoidArea = data.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM)
+          avoidTopHeight = avoidArea.topRect.height
+          bottomAvoidHeight = avoidArea.bottomRect.height
+          hilog.info(0x0000, PREFIX, 'sys avoidArea(px) top: %{public}s bottom %{public}s', '' + avoidTopHeight, '' + bottomAvoidHeight);
+
+          hilog.info(0x0000, PREFIX, 'setWindowLayoutFullScreen succeed');
+
+        })
+        .catch((e) => {
+          hilog.error(0x0000, PREFIX, 'setWindowLayoutFullScreen failed, ' + JSON.stringify(e));
+        })
+
+
+      windowClass.setWindowSystemBarEnable(this.isEmulator ? ['status'] : ['status', 'navigation'], (err) => {
+        loadContent()
+
         if (err.code) {
-          loadContent()
-          console.error('Failed to set the system bar to be visible. Cause:' + JSON.stringify(err));
+          hilog.error(0x0000, PREFIX, 'setWindowSystemBarEnable failed' + JSON.stringify(err));
+
           return;
         }
-        console.info('Succeeded in setting the system bar to be visible.');
+        hilog.info(0x0000, PREFIX, 'setWindowSystemBarEnable succeed');
       });
-
-      windowClass.setWindowLayoutFullScreen(true).finally(loadContent)
     })
 
-    // windowStage.loadContent('pages/Lock', (err, data) => {
-    //   if (err.code) {
-    //     hilog.error(0x0000, TAG, 'Failed to load the content. Cause: %{public}s', JSON.stringify(err) ?? '');
-    //     return;
-    //   }
-    //
-    //   let navHeightVp = px2vp(navBarHe)
-    //   AppStorage.SetOrCreate('navHeight', navHeightVp)
-    //   hilog.info(0x0000, TAG, '%{public}s', 'avoidArea navHeight vp' +navHeightVp);
-    //
-    //   hilog.info(0x0000, TAG, 'Succeeded in loading the content. Data: %{public}s', JSON.stringify(data) ?? '');
-    // });
   }
 
   onWindowStageDestroy() {

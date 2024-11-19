@@ -10,6 +10,8 @@ import { CommonConstants } from '../common/constants/CommonConstants'
 import { AccountViewModel } from '../viewModel/AccountViewModel'
 import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
 import { AccountGroupListViewModel, GroupedViewModelList } from '../viewModel/AccountGroupListViewModel'
+import { BaseLayout } from '../components/BaseLayout'
+import { CircleButton } from '../components/CircleButton'
 
 const TAG = '[Account list page]'
 
@@ -92,7 +94,8 @@ export struct AccountList {
   build() {
     Row() {
 
-      Column() {
+      BaseLayout() {
+
         Row() {
           TopNavBar({ title: '账号' }) {
             Button() {
@@ -265,34 +268,26 @@ export struct AccountList {
 
   @Builder SwipeActions(data: AccountInterface) {
     Row() {
-      Button({ type: ButtonType.Normal }) {
-        Row() {
-          Image($r('app.media.delete_red_icon')).width(16).margin({ right: 2 })
-          Text('删除').fontColor($r('app.color.error'))
+      CircleButton({
+        buttonColor: $r('app.color.error'),
+        icon: $r('app.media.delete_white'),
+        onButtonClick: () => {
+          this.del(data)
         }
-      }
-      .onClick(() => {
-        this.del(data)
-      })
-      .backgroundColor(Color.Transparent)
+      }).margin({ right: 10 })
 
-      .padding(10)
-
-
-      Button({ type: ButtonType.Normal }) {
-        Row() {
-          Image($r('app.media.edit_primary_icon')).width(16).margin({ right: 2 })
-          Text('编辑')
-            .fontColor($r('app.color.primary'))
+      CircleButton({
+        buttonColor: $r('app.color.warn'),
+        icon: $r('app.media.edit_white'),
+        onButtonClick: () => {
+          this.edit(data)
         }
-      }
-      .onClick(() => {
-        this.edit(data)
-      })
-      .backgroundColor(Color.Transparent)
-      .padding(10)
-      // .height('100%')
+      }).margin({ right: 10 })
+
     }.height('100%')
+    .padding({
+      left: 10,
+    })
   }
 
   @Builder buildGroupHeader(group: any) {

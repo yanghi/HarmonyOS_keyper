@@ -6,6 +6,7 @@ import { EventId } from '../common/enums/Event'
 import logger from '../common/utils/Logger'
 import { CommonConstants } from '../common/constants/CommonConstants'
 import promptAction from '@ohos.promptAction'
+import { BaseLayout } from '../components/BaseLayout'
 
 const TAG = '[RecycleBin]'
 
@@ -70,50 +71,54 @@ struct RecycleBin {
 
   build() {
     Column() {
-      Column() {
-        TopNavBar({ title: '回收站', back: true }) {
-          Row() {
-            Button() {
-              Row() {
-                Image($r('app.media.trash_white_icon')).width(14).margin({ right: 2 })
-                Text('清空').fontColor(Color.White)
-              }.padding(4)
-            }.backgroundColor(Color.Transparent)
-            .onClick(() => {
-              this.handleHardDeleteAll()
+      BaseLayout() {
+
+        Column() {
+          TopNavBar({ title: '回收站', back: true }) {
+            Row() {
+              Button() {
+                Row() {
+                  Image($r('app.media.trash_white_icon')).width(14).margin({ right: 2 })
+                  Text('清空').fontColor(Color.White)
+                }.padding(4)
+              }.backgroundColor(Color.Transparent)
+              .onClick(() => {
+                this.handleHardDeleteAll()
+              })
+            }
+          }
+        }
+
+        Column() {
+          if (!this.list.length) {
+            Row() {
+              Text('无数据').fontColor($r('app.color.gray_7'))
+            }.height('100%')
+          }
+
+          List({ space: 10 }) {
+            ForEach(this.list, (acc: AccountInterface, idx) => {
+              ListItem() {
+                Column() {
+                  Row() {
+                    Text(acc.name)
+                  }
+                  .borderRadius(10)
+                  .backgroundColor(0xFFFFFF)
+                  .padding(10)
+                  .width('100%')
+                  .shadow({ offsetX: 2, offsetY: 4, color: '#1f000000', radius: 6 })
+                  .margin({ right: 10 })
+                }
+              }
+              .padding({ left: 10 })
+              .swipeAction({ end: this.ItemSwipeEnd(acc) })
             })
           }
         }
+        .padding({ top: CommonConstants.PAGE_CONTENT_TOP_GAP })
       }
 
-      Column() {
-        if (!this.list.length) {
-          Row() {
-            Text('无数据').fontColor($r('app.color.gray_7'))
-          }.height('100%')
-        }
-
-        List({ space: 10 }) {
-          ForEach(this.list, (acc: AccountInterface, idx) => {
-            ListItem() {
-              Column() {
-                Row() {
-                  Text(acc.name)
-                }
-                .borderRadius(10)
-                .backgroundColor(0xFFFFFF)
-                .padding(10)
-                .width('100%')
-                .shadow({ offsetX: 2, offsetY: 4, color: '#1f000000', radius: 6 })
-                .margin({ right: 10 })
-              }
-            }
-            .padding({ left: 10 })
-            .swipeAction({ end: this.ItemSwipeEnd(acc) })
-          })
-        }
-      }
-      .padding({ top: CommonConstants.PAGE_CONTENT_TOP_GAP })
     }
     .height('100%')
     .backgroundColor($r('app.color.page_bg'))

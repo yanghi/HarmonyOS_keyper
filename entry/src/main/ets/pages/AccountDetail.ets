@@ -9,12 +9,16 @@ import { AccountInterface } from '../common/interfaces/Account'
 import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
 import { requestDeleteAccount } from '../common/utils/Actions'
 import { DescItem } from '../components/DescItem'
+import { SelectionModel } from '../model/Selection'
+import { ConverterModel } from '../model/ConverterModel'
+import pasteboard from '@ohos.pasteboard'
+import { stringifyError } from '../common/utils/common'
+import { BaseLayout } from '../components/BaseLayout'
 
 
 interface AccountDetailParams {
   id: number
 }
-
 
 @Component
 struct DescText {
@@ -105,6 +109,93 @@ struct AccountDetail {
     id: string,
     text: string
   }> = []
+  @ObjectLink copyKeysSelection: SelectionModel
+
+  // mcc: any
+  mcc = new CustomDialogController({
+
+    builder: () => {
+      this.MultiCopyDialogContent()
+    },
+    // cancel: ()=>{},
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    offset: { dx: 0, dy: -20 },
+    gridCount: 4,
+    customStyle: false
+  })
+
+  @Builder MultiCopyDialogContent() {
+    Column() {
+      Row() {
+        Text('自由复制').fontSize(20).margin({ top: 10, bottom: 10 })
+      }
+
+      ForEach(this.copyMenuOptions, (item) => {
+        Row() {
+          Text(item.text).width(80)
+
+          Checkbox() {
+          }
+          .select(this.copyKeysSelection.isSelected(item.id))
+          .onClick(() => {
+            this.copyKeysSelection.toggle(item.id)
+          }).margin({ left: 20 })
+        }.margin({ bottom: 10 })
+
+      })
+      Flex({ justifyContent: FlexAlign.SpaceAround }) {
+        Button() {
+          Row() {
+            Text('取消')
+          }
+        }.onClick(() => {
+          this.mcc.close()
+        })
+        .margin({ right: 10 })
+        .backgroundColor(0xffffff)
+
+        Button() {
+          Row() {
+            Text('复制').fontColor($r('app.color.primary'))
+          }
+        }.backgroundColor(0xffffff)
+        .onClick(() => {
+          if (!this.copyKeysSelection.selected.length) {
+            promptAction.showToast({
+              message: '请选择至少一项进行复制'
+            })
+            return
+          }
+
+          let str = ConverterModel.propsToString(this.account.data, this.copyKeysSelection.selected as any)
+          logger.info(TAG, 'multi copy keys ' + JSON.stringify(this.copyKeysSelection.selected))
+          let pasteboardData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, str)
+
+          const sysPasteboard = pasteboard.getSystemPasteboard()
+          sysPasteboard.setData(pasteboardData).then(() => {
+            promptAction.showToast({
+              message: `已复制到剪切板`
+            })
+          }).catch(e => {
+            logger.error(TAG, 'paste data failed,' + stringifyError(e))
+          })
+
+          this.mcc.close()
+        })
+      }
+      .margin({ top: 10, bottom: 10 })
+    }
+  }
+
+  @Builder MenuItemBuilder(opt: {
+    text: string,
+    fontColor?: string | Resource
+  }) {
+    Row() {
+      Text(opt.text).fontColor(opt.fontColor)
+    }
+  }
 
   @Builder CopyMenuBuilder() {
     Menu() {
@@ -117,6 +208,13 @@ struct AccountDetail {
           this.account.copyProp(item.id)
         })
       })
+
+      MenuItem({
+        content: '自由复制',
+      })
+        .onClick(() => {
+          this.mcc.open()
+        })
     }
 
   }
@@ -274,16 +372,34 @@ struct AccountDetail {
           .backgroundColor(Color.Transparent)
           .padding(10)
 
-          Button({ type: ButtonType.Normal }) {
-            Row() {
-              Image($r('app.media.copy_primary')).width(16).margin({ right: 2 })
-              Text('复制')
-                .fontColor($r('app.color.primary'))
+          if (this.copyMenuOptions.length) {
+            Button({ type: ButtonType.Normal }) {
+              Row() {
+                Image($r('app.media.copy_primary')).width(16).margin({ right: 2 })
+                Text('复制')
+                  .fontColor($r('app.color.primary'))
+              }
             }
+            .bindMenu(this.CopyMenuBuilder)
+            .backgroundColor(Color.Transparent)
+            .padding(10)
+          } else {
+            Button({ type: ButtonType.Normal }) {
+              Row() {
+                Image($r('app.media.copy_gray')).width(16).margin({ right: 2 })
+                Text('复制')
+                  .fontColor('#bfbfbf')
+              }
+            }
+            .onClick(() => {
+              promptAction.showToast({
+                message: '没有可以复制的内容'
+              })
+            })
+            .backgroundColor(Color.Transparent)
+            .padding(10)
           }
-          .bindMenu(this.CopyMenuBuilder)
-          .backgroundColor(Color.Transparent)
-          .padding(10)
+
 
         }
         .height(50)
@@ -303,11 +419,13 @@ struct AccountDetail {
   }
 }
 
+
 @Entry
 @Component
 struct AccountDetailEntry {
   @State account: AccountViewModel = new AccountViewModel(AccountModel.emptyData())
   // @State account: AccountViewModel = new AccountViewModel(AccountListModel.list[0])
+  @State multiCopyKeysSelection: SelectionModel<keyof AccountInterface> = new SelectionModel<keyof AccountInterface>()
 
   onPageShow() {
     let ps = router.getParams() as AccountDetailParams | undefined
@@ -333,9 +451,12 @@ struct AccountDetailEntry {
 
   build() {
     Column() {
-      AccountDetail({
-        account: this.account
-      })
+      BaseLayout() {
+        AccountDetail({
+          account: this.account,
+          copyKeysSelection: this.multiCopyKeysSelection
+        })
+      }
     }.height('100%')
   }
 }

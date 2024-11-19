@@ -5,8 +5,12 @@ import promptAction from '@ohos.promptAction'
 import { CommonConstants } from '../common/constants/CommonConstants'
 import { CustomDialogAddGroup } from '../components/CustomDialogAddGroup'
 import logger from '../common/utils/Logger'
+import { BaseLayout } from '../components/BaseLayout'
+import { CircleButton } from '../components/CircleButton'
 
 const TAG = '[AccountGroupList]'
+
+const SWIPE_ACTION_BTN_SIZE = 30
 
 @Component
 struct AccountGroupList {
@@ -49,81 +53,75 @@ struct AccountGroupList {
 
   build() {
     Column() {
-      TopNavBar({ title: '分组管理', back: true }) {
-        Button() {
-          Row() {
-            Image($r('app.media.add_white')).width(16).height(16).margin({ right: 5 })
-            Text('添加').fontColor(0xffffff)
+
+      BaseLayout() {
+        TopNavBar({ title: '分组管理', back: true }) {
+          Button() {
+            Row() {
+              Image($r('app.media.add_white')).width(16).height(16).margin({ right: 5 })
+              Text('添加').fontColor(0xffffff)
+            }
+
           }
+          .backgroundColor(Color.Transparent)
+          .padding(5)
 
+          .onClick(() => {
+            this.add()
+          })
         }
-        .backgroundColor(Color.Transparent)
-        .padding(5)
 
-        .onClick(() => {
-          this.add()
+        List({ space: 10 }) {
+          ForEach(this.listModel.list, (item: AccountGroup, idx) => {
+            ListItem() {
+              Row() {
+                Text(item.name)
+              }
+              .justifyContent(FlexAlign.Start)
+              .alignSelf(ItemAlign.Start)
+              .width('100%')
+              .borderRadius(10)
+              .backgroundColor(0xFFFFFF)
+              .padding(10)
+            }
+            .padding({
+              left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+              right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+            })
+            .swipeAction({ end: this.buildSwipeAction(idx) })
+          })
+        }.padding({
+          top: CommonConstants.PAGE_CONTENT_TOP_GAP
         })
       }
-
-      List({ space: 10 }) {
-        ForEach(this.listModel.list, (item: AccountGroup, idx) => {
-          ListItem() {
-            Row() {
-              Text(item.name)
-            }
-            .justifyContent(FlexAlign.Start)
-            .alignSelf(ItemAlign.Start)
-            .width('100%')
-            .borderRadius(10)
-            .backgroundColor(0xFFFFFF)
-            .padding(10)
-          }
-          .padding({
-            left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-            right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-          })
-          .swipeAction({ end: this.buildSwipeAction(idx) })
-        })
-      }.padding({
-        top: CommonConstants.PAGE_CONTENT_TOP_GAP
-      })
     }
+
     .backgroundColor($r('app.color.page_bg'))
     .height('100%')
   }
 
   @Builder buildSwipeAction(idx: number) {
     Row() {
-      Button({ type: ButtonType.Normal }) {
-        Row() {
-          Image($r('app.media.delete_red_icon')).width(16).margin({ right: 2 })
-          Text('删除')
-            .fontColor($r('app.color.error'))
+      CircleButton({
+        buttonColor: $r('app.color.error'),
+        icon: $r('app.media.delete_white'),
+        circleSize: SWIPE_ACTION_BTN_SIZE,
+        onButtonClick: () => {
+          this.del(this.listModel.list[idx])
         }
+      }).margin({ right: 10 })
 
-      }
-      .onClick(() => {
-        this.del(this.listModel.list[idx])
-      })
-      .backgroundColor(Color.Transparent)
-      .padding(10)
-      .height('100%')
-      .padding({ left: 10 })
-
-      Button({ type: ButtonType.Normal }) {
-        Row() {
-          Image($r('app.media.edit_primary_icon')).width(16).margin({ right: 2 })
-          Text('编辑')
-            .fontColor($r('app.color.primary'))
+      CircleButton({
+        buttonColor: $r('app.color.warn'),
+        icon: $r('app.media.edit_white'),
+        circleSize: SWIPE_ACTION_BTN_SIZE,
+        onButtonClick: () => {
+          this.edit(this.listModel.list[idx])
         }
-
-      }
-      .onClick(() => {
-        this.edit(this.listModel.list[idx])
-      })
-      .backgroundColor(Color.Transparent)
-      .padding(10)
-    }.height('100%')
+      }).margin({ right: 10 })
+    }.height('100%').padding({
+      left: 10,
+    })
   }
 }
 
@@ -134,11 +132,13 @@ struct AccountGroupListEntry {
 
   build() {
     Column() {
-      AccountGroupList({
-        listModel: this.listModel
-      })
+
+      BaseLayout() {
+        AccountGroupList({
+          listModel: this.listModel
+        })
+      }
     }
     .height('100%')
-
   }
 }

@@ -8,6 +8,7 @@ import { CommonConstants } from '../common/constants/CommonConstants'
 import { dataManager } from '../model/DataManager'
 import { CipherModel } from '../model/Cipher'
 import { CustomPwdValidateType } from '../common/enums/app'
+import { BaseLayout } from '../components/BaseLayout'
 
 @Styles function listItemCard() {
   .backgroundColor(0xffffff)
@@ -223,88 +224,91 @@ export struct Settings {
 
   build() {
     Column() {
-      Column() {
-        TopNavBar({ title: '设置' }) {
+      BaseLayout() {
+
+        Column() {
+          TopNavBar({ title: '设置' }) {
+          }
+        }.padding({ bottom: CommonConstants.PAGE_CONTENT_TOP_GAP })
+
+        List({ space: 10 }) {
+          ListItemGroup() {
+            ListItem() {
+              this.buildListItem('分组管理', () => {
+                router.pushUrl({
+                  url: 'pages/AccountGroupList'
+                })
+              })
+            }.listItemStyles()
+
+            ListItem() {
+              this.buildListItem('回收站', () => {
+                router.pushUrl({
+                  url: 'pages/RecycleBin'
+                })
+              })
+            }.listItemStyles()
+          }
+          .divider({ strokeWidth: 1, endMargin: 15 })
+
+          ListItemGroup({ header: this.itemHeader('数据') }) {
+            // for test
+            // ListItem() {
+            //   this.buildListItem('测试', () => {
+            //     dataManager.testPort().then(()=>{
+            //       promptAction.showToast({
+            //         message: '成功'
+            //       })
+            //     }).catch(e=>{
+            //       promptAction.showToast({
+            //         message: '失败'
+            //       })
+            //     })
+            //   })
+            // }.listItemStyles()
+
+            ListItem() {
+              this.buildListItem('导出', () => {
+                this.handleExportAsJson()
+              })
+            }.listItemStyles()
+
+            ListItem() {
+              this.buildListItem('导入', () => {
+                this.importFromJson()
+              })
+            }.listItemStyles()
+
+            ListItem() {
+              this.buildListItem('明文导出', () => {
+                this.exportToExt()
+              })
+            }.listItemStyles()
+
+            ListItem() {
+              this.buildListItem('重置数据', () => {
+                this.handleReset()
+              })
+            }.listItemStyles()
+          }.borderRadius(10)
+          .divider({ strokeWidth: 1, endMargin: 15 })
+
+          ListItemGroup() {
+            ListItem() {
+              this.buildListItem('关于', () => {
+                router.pushUrl({
+                  url: 'pages/About'
+                })
+              })
+            }.listItemStyles()
+          }.divider({ strokeWidth: 1, endMargin: 15, startMargin: 15 })
         }
-      }.padding({ bottom: CommonConstants.PAGE_CONTENT_TOP_GAP })
-
-      List({ space: 10 }) {
-        ListItemGroup() {
-          ListItem() {
-            this.buildListItem('分组管理', () => {
-              router.pushUrl({
-                url: 'pages/AccountGroupList'
-              })
-            })
-          }.listItemStyles()
-
-          ListItem() {
-            this.buildListItem('回收站', () => {
-              router.pushUrl({
-                url: 'pages/RecycleBin'
-              })
-            })
-          }.listItemStyles()
-        }
-        .divider({ strokeWidth: 1, endMargin: 15 })
-
-        ListItemGroup({ header: this.itemHeader('数据') }) {
-          // for test
-          // ListItem() {
-          //   this.buildListItem('测试', () => {
-          //     dataManager.testPort().then(()=>{
-          //       promptAction.showToast({
-          //         message: '成功'
-          //       })
-          //     }).catch(e=>{
-          //       promptAction.showToast({
-          //         message: '失败'
-          //       })
-          //     })
-          //   })
-          // }.listItemStyles()
-
-          ListItem() {
-            this.buildListItem('导出', () => {
-              this.handleExportAsJson()
-            })
-          }.listItemStyles()
-
-          ListItem() {
-            this.buildListItem('导入', () => {
-              this.importFromJson()
-            })
-          }.listItemStyles()
-
-          ListItem() {
-            this.buildListItem('明文导出', () => {
-              this.exportToExt()
-            })
-          }.listItemStyles()
-
-          ListItem() {
-            this.buildListItem('重置数据', () => {
-              this.handleReset()
-            })
-          }.listItemStyles()
-        }.borderRadius(10)
-        .divider({ strokeWidth: 1, endMargin: 15 })
-
-        ListItemGroup() {
-          ListItem() {
-            this.buildListItem('关于', () => {
-              router.pushUrl({
-                url: 'pages/About'
-              })
-            })
-          }.listItemStyles()
-        }.divider({ strokeWidth: 1, endMargin: 15, startMargin: 15 })
+        .padding({ left: 10, right: 10 })
       }
-      .padding({ left: 10, right: 10 })
 
     }
     .height('100%')
-    .justifyContent(FlexAlign.Start)
+    // .justifyContent(FlexAlign.Start)
     .backgroundColor($r('app.color.page_bg'))
   }
 

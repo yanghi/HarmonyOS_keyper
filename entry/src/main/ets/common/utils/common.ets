@@ -5,7 +5,14 @@ export function isValidateIntId(id: any) {
 }
 
 export function dateTimeToDefaultString(time: number | string) {
-  return new Date(time).toDateString()
+  let date = new Date(time)
+  let y = '' + date.getFullYear()
+  let M = '' + (date.getMonth() + 1)
+  let m = '' + date.getMinutes()
+  let d = '' + date.getDate()
+  let h = '' + date.getHours()
+  ''.padStart(2, '0')
+  return `${y.padStart(2, '0')}/${M.padStart(2, '0')}/${d.padStart(2, '0')} ${h.padStart(2, '0')}:${m.padStart(2, '0')}`
 }
 
 export function stringToUint8Array(str) {

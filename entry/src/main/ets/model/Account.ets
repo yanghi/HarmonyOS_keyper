@@ -38,6 +38,29 @@ export class AccountModel {
       acc.bindings = []
     }
   }
+
+  static keyToLabel(key: keyof AccountInterface) {
+
+    const keyLabelMap: {
+      [x in keyof AccountInterface]: string
+    } = {
+      name: '名称',
+      'pwd': '密码',
+      account: '账号',
+      userName: '用户名',
+      nickName: '昵称',
+      note: '备注',
+      groupId: '分组ID',
+      group: '分组',
+      updateTime: '更新时间',
+      createTime: '创建时间',
+      bindings: '关联',
+      id: '账号ID'
+    }
+
+
+    return keyLabelMap[key]
+  }
 }
 
 

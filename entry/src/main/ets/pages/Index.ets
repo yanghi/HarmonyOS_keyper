@@ -11,6 +11,8 @@ import { AppLockType } from '../common/enums/app'
 import { AppLock } from '../model/Lock'
 import router from '@ohos.router'
 import { AccountGroupListViewModel } from '../viewModel/AccountGroupListViewModel'
+import { CommonConstants } from '../common/constants/CommonConstants'
+import { BaseLayout } from '../components/BaseLayout'
 
 const TAG = '[Index]'
 
@@ -80,54 +82,56 @@ struct Index {
 
   build() {
     Column() {
-      Tabs({
-        index: 0
-      }) {
-        TabContent() {
-          AccountList()
-        }.tabBar(
-          this.TabBuilder({
-            text: '账号',
-            index: 0,
-            icon: $r('app.media.tabbar_account_icon'),
-            selectedIcon: $r('app.media.tabbar_account_active_icon')
-          })
-        )
 
-        TabContent() {
-          BindingList()
-        }.tabBar(
-          this.TabBuilder({
-            text: '关联',
-            index: 1,
-            icon: $r("app.media.tabbar_binging_icon"),
-            selectedIcon: $r("app.media.tabbar_binding_active_icon")
+      BaseLayout() {
+        Tabs({
+          index: 0
+        }) {
+          TabContent() {
+            AccountList()
+          }.tabBar(
+            this.TabBuilder({
+              text: '账号',
+              index: 0,
+              icon: $r('app.media.tabbar_account_icon'),
+              selectedIcon: $r('app.media.tabbar_account_active_icon')
+            })
+          )
+
+          TabContent() {
+            BindingList()
+          }.tabBar(
+            this.TabBuilder({
+              text: '关联',
+              index: 1,
+              icon: $r("app.media.tabbar_binging_icon"),
+              selectedIcon: $r("app.media.tabbar_binding_active_icon")
+            }))
+
+          TabContent() {
+            Tools()
+          }.tabBar(this.TabBuilder({
+            text: '工具',
+            index: 2,
+            icon: $r("app.media.tabbar_tools_icon"),
+            selectedIcon: $r("app.media.tabbar_tools_active_icon"),
           }))
 
-        TabContent() {
-          Tools()
-        }.tabBar(this.TabBuilder({
-          text: '工具',
-          index: 2,
-          icon: $r("app.media.tabbar_tools_icon"),
-          selectedIcon: $r("app.media.tabbar_tools_active_icon"),
-        }))
-
-        TabContent() {
-          Settings()
-        }.tabBar(this.TabBuilder({
-          text: '设置',
-          index: 3,
-          icon: $r("app.media.tabbar_setting_icon"),
-          selectedIcon: $r("app.media.tabbar_setting_active_icon"),
-        }))
+          TabContent() {
+            Settings()
+          }.tabBar(this.TabBuilder({
+            text: '设置',
+            index: 3,
+            icon: $r("app.media.tabbar_setting_icon"),
+            selectedIcon: $r("app.media.tabbar_setting_active_icon"),
+          }))
+        }
+        .barPosition(BarPosition.End)
+        .scrollable(false)
+        .onChange(current => {
+          this.current = current
+        })
       }
-      .barPosition(BarPosition.End)
-      .scrollable(false)
-      .onChange(current => {
-        this.current = current
-      })
     }
-
   }
 }

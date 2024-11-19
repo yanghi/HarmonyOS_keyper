@@ -1,6 +1,7 @@
 import { TopNavBar } from '../components/TopNavBar'
 import bundleManager from '@ohos.bundle.bundleManager';
 import logger from '../common/utils/Logger';
+import { BaseLayout } from '../components/BaseLayout';
 
 
 @Entry
@@ -26,25 +27,27 @@ struct AboutEntry {
 
   build() {
     Column() {
-      TopNavBar({ title: '关于', back: true }) {
+      BaseLayout() {
+        TopNavBar({ title: '关于', back: true }) {
+        }
+
+        Column() {
+          Row() {
+            Image($r('app.media.app_icon')).width(32).margin({ bottom: 10 })
+          }
+
+          Column() {
+            Text($r('app.string.app_name')).margin({ bottom: 10 })
+
+            Text('当前版本 ' + this.versionName).fontColor($r('app.color.gray_7'))
+          }
+
+          Column() {
+            Text('应用的全部数据都存储在本地.敏感数据经过加密后存储,解密后展示.加密算法使用MD5和对称加密')
+          }.margin({ top: 20 })
+        }.margin(20)
+
       }
-
-      Column() {
-        Row() {
-          Image($r('app.media.app_icon')).width(32).margin({ bottom: 10 })
-        }
-
-        Column() {
-          Text($r('app.string.app_name')).margin({ bottom: 10 })
-
-          Text('当前版本 ' + this.versionName).fontColor($r('app.color.gray_7'))
-        }
-
-        Column() {
-          Text('应用的全部数据都存储在本地.敏感数据经过加密后存储,解密后展示.加密算法使用MD5和对称加密')
-        }.margin({ top: 20 })
-      }.margin(20)
-
     }
   }
 }

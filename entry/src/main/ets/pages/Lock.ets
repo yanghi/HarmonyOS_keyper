@@ -12,6 +12,8 @@ import { PasswordStrengthIndicator } from '../components/PasswordStrengthIndicat
 import { CheckPasswordStrengthResult, PasswordStrength } from '../common/utils/CheckPasswordStrength'
 import { PortCryptModel } from '../model/DataManager'
 import { stringifyError } from '../common/utils/common'
+import { CommonConstants } from '../common/constants/CommonConstants'
+import { BaseLayout } from '../components/BaseLayout'
 
 const TAG = '[LockEntry]'
 
@@ -36,6 +38,7 @@ struct LockEntry {
   @State confirmPwdPhase: boolean = false
   private verifyParams: VerifyParams | null = null
   passwordStrengthResult: CheckPasswordStrengthResult | null = null
+  @StorageProp('navHeight') avoidTopHeight: number = 0
 
   checkIsVerifyMode() {
     Logger.info(TAG, 'checkIsVerifyMode')
@@ -49,6 +52,10 @@ struct LockEntry {
   }
 
   aboutToAppear() {
+    Logger.info(TAG, 'sxxx' + this.avoidTopHeight)
+
+    Logger.info(TAG, 'ww ' + CommonConstants.SYS_AVOID_AREA_BOTTOM_HEIGHT)
+
     if (this.checkIsVerifyMode()) return
 
     AppRelationalStoreManager.init().then(() => {
@@ -233,96 +240,102 @@ struct LockEntry {
 
   build() {
     Column() {
-      if (this.lockType === AppLockType.Verify) {
-        TopNavBar({ back: true, title: this.verifyParams?.reasonTitle ?? '' }) {
+
+      BaseLayout() {
+        Column() {
+          if (this.lockType === AppLockType.Verify) {
+            TopNavBar({ back: true, title: this.verifyParams?.reasonTitle ?? '' }) {
+            }
+          }
+          Column() {
+            Column() {
+              Column() {
+                Image($r('app.media.account_lock')).width(50).margin({ bottom: 10 })
+                Text(this.lockTitle())
+                  .fontSize(26)
+                  .fontWeight(FontWeight.Bold)
+                  .textAlign(TextAlign.Center)
+              }
+              .alignItems(HorizontalAlign.Center)
+              .justifyContent(FlexAlign.Center)
+              // subtitle
+              Row() {
+                if (this.lockType == AppLockType.Verify && this.verifyParams) {
+                  if (this.verifyParams.reasonTitle) {
+                    Text('您想要进行"' + this.verifyParams.reasonTitle + '"操作,输入密码确认').fontSize(18)
+                  }
+                  if (this.verifyParams.subTitle) {
+                    Text(this.verifyParams.subTitle).fontSize(18)
+                  }
+                }
+              }.margin({ top: 10, bottom: 30 })
+
+              Row() {
+                TextInput({
+                  // controller: pwdInputController,
+                  text: this.pwd,
+                })
+                  .focusable(true)
+                  .type(InputType.Password)
+                  .enterKeyType(EnterKeyType.Go)
+                  .onSubmit(() => this.submit())
+                  .onChange((v) => {
+                    this.pwd = v
+                    if (this.resetPwdInputFlag) {
+                      this.resetPwdInputFlag = false
+                    } else {
+                      this.pwdErrTip = ''
+                    }
+                  })
+              }
+
+              if (this.lockType === AppLockType.Create && !this.confirmPwdPhase) {
+                PasswordStrengthIndicator({
+                  password: this.pwd,
+                  onStrengthResultChange: (res) => {
+                    this.passwordStrengthResult = res
+                  }
+                })
+              }
+              Row() {
+                Text(this.pwdErrTip)
+                  .fontColor('red')
+                  .fontSize(12)
+                  .align(Alignment.Center)
+                  .width('100%')
+              }
+              .height(20)
+              .align(Alignment.Center)
+              .alignItems(VerticalAlign.Center)
+              .margin('6 0')
+
+              Column() {
+                Button({ type: ButtonType.Capsule }) {
+                  Row() {
+                    Text(this.confirmBtnText())
+                      .fontColor(0xffffff)
+                  }
+                }
+                .fontColor(0xfff)
+                .backgroundColor(0x317aff)
+                .width('80%')
+                .padding(10)
+                .alignSelf(ItemAlign.Center)
+                .onClick(() => this.submit())
+              }
+              .alignItems(HorizontalAlign.Center)
+            }
+            .margin({ top: '30%' })
+          }.flexGrow(2)
+          .padding({ left: '10%', right: '10%' })
+          .justifyContent(FlexAlign.Center)
+
         }
+        .alignItems(HorizontalAlign.Center)
+        .width('100%')
       }
 
-      Column() {
-        Column() {
-          Column() {
-            Image($r('app.media.account_lock')).width(50).margin({ bottom: 10 })
-            Text(this.lockTitle())
-              .fontSize(26)
-              .fontWeight(FontWeight.Bold)
-              .textAlign(TextAlign.Center)
-          }
-          .alignItems(HorizontalAlign.Center)
-          .justifyContent(FlexAlign.Center)
-          // subtitle
-          Row() {
-            if (this.lockType == AppLockType.Verify && this.verifyParams) {
-              if (this.verifyParams.reasonTitle) {
-                Text('您想要进行"' + this.verifyParams.reasonTitle + '"操作,输入密码确认').fontSize(18)
-              }
-              if (this.verifyParams.subTitle) {
-                Text(this.verifyParams.subTitle).fontSize(18)
-              }
-            }
-          }.margin({ top: 10, bottom: 30 })
+    }.height('100%')
 
-          Row() {
-            TextInput({
-              // controller: pwdInputController,
-              text: this.pwd,
-            })
-              .focusable(true)
-              .type(InputType.Password)
-              .enterKeyType(EnterKeyType.Go)
-              .onSubmit(() => this.submit())
-              .onChange((v) => {
-                this.pwd = v
-                if (this.resetPwdInputFlag) {
-                  this.resetPwdInputFlag = false
-                } else {
-                  this.pwdErrTip = ''
-                }
-              })
-          }
-
-          if (this.lockType === AppLockType.Create && !this.confirmPwdPhase) {
-            PasswordStrengthIndicator({
-              password: this.pwd,
-              onStrengthResultChange: (res) => {
-                this.passwordStrengthResult = res
-              }
-            })
-          }
-          Row() {
-            Text(this.pwdErrTip)
-              .fontColor('red')
-              .fontSize(12)
-              .align(Alignment.Center)
-              .width('100%')
-          }
-          .height(20)
-          .align(Alignment.Center)
-          .alignItems(VerticalAlign.Center)
-          .margin('6 0')
-
-          Column() {
-            Button({ type: ButtonType.Capsule }) {
-              Row() {
-                Text(this.confirmBtnText())
-                  .fontColor(0xffffff)
-              }
-            }
-            .fontColor(0xfff)
-            .backgroundColor(0x317aff)
-            .width('80%')
-            .padding(10)
-            .alignSelf(ItemAlign.Center)
-            .onClick(() => this.submit())
-          }
-          .alignItems(HorizontalAlign.Center)
-        }
-        .margin({ top: '30%' })
-      }.flexGrow(2)
-      .padding({ left: '10%', right: '10%' })
-      .justifyContent(FlexAlign.Center)
-
-    }
-    .alignItems(HorizontalAlign.Center)
-    .width('100%')
   }
 }

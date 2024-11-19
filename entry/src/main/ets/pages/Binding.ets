@@ -4,6 +4,7 @@ import router from '@ohos.router'
 import { AccountBindingViewModel } from '../viewModel/AccountBindingViewModel'
 import { TopNavBar } from '../components/TopNavBar'
 import logger from '../common/utils/Logger'
+import { BaseLayout } from '../components/BaseLayout'
 
 interface BindingParams {
   id?: number
@@ -81,8 +82,8 @@ struct Binding {
   }
 
   build() {
-    Row() {
-      Column() {
+    Column() {
+      BaseLayout() {
         // NavBackBar({ title: '添加绑定' })
         Column() {
           TopNavBar({ title: this.isEdit ? '编辑关联' : '添加关联', back: true }) {
@@ -116,6 +117,6 @@ struct Binding {
             })
         }
       }
-    }
+    }.height('100%')
   }
 }

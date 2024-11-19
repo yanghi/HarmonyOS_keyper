@@ -2,6 +2,7 @@ export enum EventId {
   AccountListUpdate,
   AccountDeletedListUpdate,
   AccountBindingListUpdate,
+  AccountGroupListUpdate,
   VerifySuccess,
   Lock,
   AppForeground = 500,

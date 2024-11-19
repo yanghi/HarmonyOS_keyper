@@ -13,6 +13,9 @@ import { AccountGroupListModel, AccountGroupListModelCls } from '../model/Accoun
 import { AccountGroupSelect } from '../components/AccountGroupSelect'
 import { DescItem } from '../components/DescItem'
 import { AccountBindingSelect } from '../components/AccountBindingSelect'
+import emitter from '@ohos.events.emitter'
+import { EventId } from '../common/enums/Event'
+import { BaseLayout } from '../components/BaseLayout'
 
 interface AccountParams {
   id?: number
@@ -62,6 +65,12 @@ struct AccountEntry {
     }
 
     this.isEdit = false
+  }
+
+  aboutToAppear() {
+    emitter.on({ eventId: EventId.AccountBindingListUpdate }, () => {
+      this.foreUpdateLabelBindings()
+    })
   }
 
   onPageShow() {
@@ -165,186 +174,198 @@ struct AccountEntry {
   }
 
   build() {
-
     Column() {
-      TopNavBar({ title: this.isEdit ? '编辑账号' : '添加账号', back: true }) {
-
-      }
-
-      Column() {
-        this.SectionTitle('基本信息')
+      BaseLayout() {
         Column() {
-          DescItem({ label: '名称', gutter: ItemGutter, required: true }) {
-            TextInput({
-              text: this.account.name
-            })
-              .onChange(v => {
-                this.account.name = v
-              })
-          }
-
-          DescItem({ label: '分组', gutter: ItemGutter }) {
-            AccountGroupSelect({
-              groupId: this.account.groupId,
-              groupModel: AccountGroupListModel,
-              onChange: (groupId: number) => {
-                this.account.groupId = groupId
-                Logger.debug(TAG, 'gid ' + groupId)
-              }
-            })
-          }
-
-          DescItem({ label: '密码', gutter: 0 }) {
-            TextInput({
-              text: this.account.pwd,
-            })
-              .type(InputType.Password)
-              .onChange(v => {
-                this.account.pwd = v
-              })
-          }.margin({ top: ItemGutter })
-          // 密码强度提示
-          DescItem({ label: '', gutter: 0 }) {
-            PasswordStrengthIndicator({
-              password: this.account.pwd
-            })
-          }
-
-          DescItem({ label: '关联', gutter: ItemGutter }) {
-            Button() {
-              Row() {
-                Text('新增关联').fontColor($r('app.color.primary'))
-              }
-            }
-            .backgroundColor(Color.Transparent)
-            .onClick(() => {
-              router.pushUrl({
-                url: 'pages/Binding'
-              })
-            })
+          TopNavBar({ title: this.isEdit ? '编辑账号' : '添加账号', back: true }) {
 
           }
-          // 关联二级输入
-          DescItem({ label: '', gutter: ItemGutter }) {
+
+          Column() {
+            this.SectionTitle('基本信息')
             Column() {
+              DescItem({ label: '名称', gutter: ItemGutter, required: true }) {
+                TextInput({
+                  text: this.account.name
+                })
+                  .onChange(v => {
+                    this.account.name = v
+                  })
+              }
 
-              ForEach(this.labelBindings, (bindingItem: AccountBindingViewModel, index) => {
-                Row() {
-                  Row() {
-                    Select(bindingOptions)
-                      .value(bindingItem.typeLabel)
-                      .onSelect((idx, v) => {
-                        bindingItem.setTypeLabel(v)
-                        bindingItem.bind = ''
-                        this.foreUpdateLabelBindings()
-                      })
-                      .alignSelf(ItemAlign.Center)
-                      .margin({ right: 15 })
-                      .selectedOptionFont({
-                        size: 14,
-                        weight: FontWeight.Lighter
-                      })
-
-
-                    if (bindingItem.getCurrentTypeContactOptions().length) {
-                      Select(bindingItem.getCurrentTypeContactOptions())
-                        .value(bindingItem.bind)
-                        .onSelect((idx, v) => {
-                          bindingItem.contactCurrentTypeBindingWithIdx(idx)
-                        })
-                    } else {
-                      Text("无数据").fontColor($r('app.color.gray_6')).alignSelf(ItemAlign.Center).fontSize(14)
-                    }
+              DescItem({ label: '分组', gutter: ItemGutter }) {
+                AccountGroupSelect({
+                  groupId: this.account.groupId,
+                  groupModel: AccountGroupListModel,
+                  onChange: (groupId: number) => {
+                    this.account.groupId = groupId
+                    Logger.debug(TAG, 'gid ' + groupId)
                   }
+                })
+              }
 
+              DescItem({ label: '账号', gutter: ItemGutter }) {
+                TextInput({
+                  text: this.account.account,
+                })
+                  .onChange(v => {
+                    this.account.account = v
+                  })
+              }
+
+              DescItem({ label: '密码', gutter: 0 }) {
+                TextInput({
+                  text: this.account.pwd,
+                })
+                  .type(InputType.Password)
+                  .onChange(v => {
+                    this.account.pwd = v
+                  })
+              }.margin({ top: ItemGutter })
+              // 密码强度提示
+              DescItem({ label: '', gutter: 0 }) {
+                PasswordStrengthIndicator({
+                  password: this.account.pwd
+                })
+              }
+
+              DescItem({ label: '关联', gutter: ItemGutter }) {
+                Button() {
                   Row() {
-                    if (this.labelBindings.length > 1) {
+                    Text('新增关联').fontColor($r('app.color.primary'))
+                  }
+                }
+                .backgroundColor(Color.Transparent)
+                .onClick(() => {
+                  router.pushUrl({
+                    url: 'pages/Binding'
+                  })
+                })
 
-                      Button() {
-                        Row() {
-                          Image($r('app.media.remove_red')).width(16).margin({ right: 2 })
-                          // Text('移除').fontColor($r('app.color.error')).fontSize(14)
+              }
+              // 关联二级输入
+              DescItem({ label: '', gutter: ItemGutter }) {
+                Column() {
+
+                  ForEach(this.labelBindings, (bindingItem: AccountBindingViewModel, index) => {
+                    Row() {
+                      Row() {
+                        Select(bindingOptions)
+                          .value(bindingItem.typeLabel)
+                          .onSelect((idx, v) => {
+                            bindingItem.setTypeLabel(v)
+                            bindingItem.bind = ''
+                            this.foreUpdateLabelBindings()
+                          })
+                          .alignSelf(ItemAlign.Center)
+                          .margin({ right: 15 })
+                          .selectedOptionFont({
+                            size: 14,
+                            weight: FontWeight.Lighter
+                          })
+
+
+                        if (bindingItem.getCurrentTypeContactOptions().length) {
+                          Select(bindingItem.getCurrentTypeContactOptions())
+                            .value(bindingItem.bind)
+                            .onSelect((idx, v) => {
+                              bindingItem.contactCurrentTypeBindingWithIdx(idx)
+                            })
+                        } else {
+                          Text("无数据").fontColor($r('app.color.gray_6')).alignSelf(ItemAlign.Center).fontSize(14)
                         }
                       }
-                      .margin({ left: 5 })
-                      .backgroundColor(Color.Transparent)
-                      .onClick(() => {
-                        this.dropBinding(index)
-                      })
-                    }
 
-                    Button() {
                       Row() {
-                        Image($r('app.media.add_primary')).width(16).margin({ right: 2 })
-                        // Text('添加').fontColor($r('app.color.primary')).fontSize(14)
+                        if (this.labelBindings.length > 1) {
+
+                          Button() {
+                            Row() {
+                              Image($r('app.media.remove_red')).width(16).margin({ right: 2 })
+                              // Text('移除').fontColor($r('app.color.error')).fontSize(14)
+                            }
+                          }
+                          .margin({ left: 5 })
+                          .backgroundColor(Color.Transparent)
+                          .onClick(() => {
+                            this.dropBinding(index)
+                          })
+                        }
+
+                        Button() {
+                          Row() {
+                            Image($r('app.media.add_primary')).width(16).margin({ right: 2 })
+                            // Text('添加').fontColor($r('app.color.primary')).fontSize(14)
+                          }
+                        }
+                        .margin({ left: 5 })
+
+                        .backgroundColor(Color.Transparent)
+                        .onClick(() => {
+                          this.pushEmptyBinding()
+                        })
                       }
+                      .alignSelf(ItemAlign.Center)
                     }
-                    .margin({ left: 5 })
-
-                    .backgroundColor(Color.Transparent)
-                    .onClick(() => {
-                      this.pushEmptyBinding()
-                    })
-                  }
-                  .alignSelf(ItemAlign.Center)
+                    // .margin({ top: 5 })
+                    .width('100%')
+                    .justifyContent(FlexAlign.SpaceBetween)
+                  })
                 }
-                // .margin({ top: 5 })
-                .width('100%')
-                .justifyContent(FlexAlign.SpaceBetween)
-              })
+
+              }
             }
+            .SectionCard()
 
+            this.SectionTitle('附加信息')
+            Column() {
+              DescItem({ label: '用户名', gutter: ItemGutter }) {
+                TextInput({
+                  text: this.account.userName
+                })
+                  .onChange(v => {
+                    this.account.userName = v
+                  })
+              }
+
+              DescItem({ label: '昵称', gutter: ItemGutter }) {
+                TextInput({
+                  text: this.account.nickName
+                })
+                  .onChange(v => {
+                    this.account.nickName = v
+                  })
+              }
+
+
+              DescItem({ label: '备注', gutter: ItemGutter }) {
+                TextInput({
+                  text: this.account.note,
+                }).onChange(v => {
+                  this.account.note = v
+                })
+              }
+            }
+            .SectionCard()
+
+            // submit
+            Row() {
+              Button('保存')
+                .width('80%')
+                .padding(10)
+                .margin({ top: 40 })
+                .onClick(() => {
+                  this.submit()
+                })
+            }
           }
-        }
-        .SectionCard()
-
-        this.SectionTitle('附加信息')
-        Column() {
-          DescItem({ label: '用户名', gutter: ItemGutter }) {
-            TextInput({
-              text: this.account.userName
-            })
-              .onChange(v => {
-                this.account.userName = v
-              })
-          }
-
-          DescItem({ label: '昵称', gutter: ItemGutter }) {
-            TextInput({
-              text: this.account.nickName
-            })
-              .onChange(v => {
-                this.account.nickName = v
-              })
-          }
-
-
-          DescItem({ label: '备注', gutter: ItemGutter }) {
-            TextInput({
-              text: this.account.note,
-            }).onChange(v => {
-              this.account.note = v
-            })
-          }
-        }
-        .SectionCard()
-
-        // submit
-        Row() {
-          Button('保存')
-            .width('80%')
-            .padding(10)
-            .margin({ top: 40 })
-            .onClick(() => {
-              this.submit()
-            })
+          .padding({
+            left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+            right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
+            top: CommonConstants.PAGE_CONTENT_TOP_GAP
+          })
         }
       }
-      .padding({
-        left: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-        right: CommonConstants.PAGE_CONTENT_HORIZONTAL_GAP,
-        top: CommonConstants.PAGE_CONTENT_TOP_GAP
-      })
-    }
+    }.height('100%')
   }
 }

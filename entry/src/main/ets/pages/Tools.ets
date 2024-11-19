@@ -1,3 +1,4 @@
+import { BaseLayout } from '../components/BaseLayout'
 import { TopNavBar } from '../components/TopNavBar'
 import { ToolCheckPasswordStrength } from './ToolCheckPasswordStrength'
 import { ToolPasswordGenerate } from './ToolPasswordGenerate'
@@ -26,28 +27,33 @@ export struct Tools {
 
   build() {
     Column() {
-      Column() {
-        TopNavBar({ title: '工具' }) {
+
+      BaseLayout() {
+        Column() {
+          TopNavBar({ title: '工具' }) {
+          }
         }
-      }
 
-      Tabs({ barPosition: BarPosition.Start }) {
-        TabContent() {
-          ToolPasswordGenerate()
-        }.tabBar(this.TabBuilder(0, '密码生成'))
+        Tabs({ barPosition: BarPosition.Start }) {
+          TabContent() {
+            ToolPasswordGenerate()
+          }.tabBar(this.TabBuilder(0, '密码生成'))
 
-        TabContent() {
-          ToolCheckPasswordStrength()
-        }.tabBar(this.TabBuilder(1, '强度检测'))
+          TabContent() {
+            ToolCheckPasswordStrength()
+          }.tabBar(this.TabBuilder(1, '强度检测'))
+        }
+        .barMode(BarMode.Fixed)
+        .barWidth(200)
+        .barHeight(56)
+        .animationDuration(400)
+        .onChange((index: number) => {
+          this.currentIndex = index
+        })
+        .backgroundColor('#F1F3F5')
       }
-      .barMode(BarMode.Fixed)
-      .barWidth(200)
-      .barHeight(56)
-      .animationDuration(400)
-      .onChange((index: number) => {
-        this.currentIndex = index
-      })
-      .backgroundColor('#F1F3F5')
     }
+
+    .height('100%')
   }
 }

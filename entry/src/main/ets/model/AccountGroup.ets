@@ -6,6 +6,8 @@ import { dateTimeToDefaultString, isValidateIntId, stringifyError } from '../com
 import { rdbExtractResultRecords } from '../common/utils/DBUtils'
 import logger from '../common/utils/Logger'
 import relationalStore from '@ohos.data.relationalStore'
+import emitter from '@ohos.events.emitter'
+import { EventId } from '../common/enums/Event'
 
 const TAG = '[AccountGroupListModel]'
 
@@ -23,6 +25,11 @@ export class AccountGroupListModelCls {
       id: it.id,
       group: it
     }))
+    this.emitListUpdate()
+  }
+
+  private emitListUpdate() {
+    emitter.emit({ eventId: EventId.AccountGroupListUpdate }, { data: { list: this.list } })
   }
 
   async queryAll() {
@@ -141,7 +148,7 @@ export class AccountGroupListModelCls {
   }
 
   concatGroup(acc: AccountInterface) {
-    if (!isValidateIntId(acc.groupId)) {
+    if (!isValidateIntId(acc.groupId) || acc.groupId == DEFAULT_GROUP.id) {
       return
     }
     let target = this.list.find(it => it.id === acc.groupId)
